@@ -2,3 +2,6 @@
 [build]
   command = "cd client && npm install && npm run build"
   publish = "client/build"
+
+[build.environment]
+  CI = "false"

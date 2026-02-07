@@ -174,9 +174,10 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
     // If set has no parts (e.g. from shop listing), fetch full set with parts
     if (!set.parts || set.parts.length === 0) {
       try {
-        const { data } = await setsApi.getById(set.set_id);
-        if (data?.set?.parts?.length) {
-          set.parts = data.set.parts.map((p: any) => ({
+        const res = await setsApi.getById(set.set_id);
+        const payload = res.data as { set?: { parts?: any[] } };
+        if (payload?.set?.parts?.length) {
+          set.parts = payload.set.parts.map((p: any) => ({
             ...p,
             part_name: p.part_name ?? p.name ?? p.part_number ?? '',
             is_optional: p.is_optional !== undefined ? p.is_optional : !(p.is_required === 1 || p.is_required === true),
