@@ -1,6 +1,6 @@
 # Netlify build config for MakerSet client (monorepo: client app in client/)
 [build]
-  command = "cd client && npm install && npm run build"
+  command = "cd client && npm install --legacy-peer-deps && npm run build"
   publish = "client/build"
 
 [build.environment]
