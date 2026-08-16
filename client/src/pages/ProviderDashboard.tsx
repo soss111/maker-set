@@ -406,7 +406,7 @@ const ProviderDashboardPage: React.FC = () => {
 
   if (loading) {
     return (
-      <Box sx={{ p: 3 }}>
+      <Box sx={{ p: { xs: 1.5, sm: 3 } }}>
         <LinearProgress />
         <Typography sx={{ mt: 2 }}>Loading provider dashboard...</Typography>
       </Box>
@@ -414,18 +414,18 @@ const ProviderDashboardPage: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 1.5, sm: 3 }, width: '100%', maxWidth: '100%', boxSizing: 'border-box', overflowX: 'hidden' }}>
       {/* Show Provider Set Management if requested */}
       {showSetManagement ? (
         <Box>
-          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
             <Button
               variant="outlined"
               onClick={() => setShowSetManagement(false)}
             >
               ← Back to Dashboard
             </Button>
-            <Typography variant="h5" component="h1">
+            <Typography variant="h5" component="h1" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
               Manage My Sets
             </Typography>
           </Box>
@@ -435,18 +435,29 @@ const ProviderDashboardPage: React.FC = () => {
         <>
           {/* Header */}
           <Box sx={{ mb: 4 }}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
-              <Box>
-                <Typography variant="h4" component="h1" gutterBottom>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: { xs: 'stretch', sm: 'center' },
+                justifyContent: 'space-between',
+                mb: 2,
+                gap: 2,
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h4" component="h1" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
                   Provider Dashboard
                 </Typography>
                 <Typography variant="body1" color="text.secondary">
                   Welcome back, {user?.first_name || 'Provider'}! Manage your sets and track your performance.
                 </Typography>
               </Box>
-              <Box sx={{ display: 'flex', gap: 2 }}>
+              <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                 <Button
                   variant="outlined"
+                  fullWidth={false}
+                  sx={{ flex: { xs: '1 1 auto', sm: '0 0 auto' } }}
                   startIcon={<AnalyticsIcon />}
                   onClick={handleViewAnalytics}
                 >
@@ -456,7 +467,7 @@ const ProviderDashboardPage: React.FC = () => {
                   variant="contained"
                   startIcon={<AddIcon />}
                   onClick={handleCreateSet}
-                  sx={{ minWidth: 150 }}
+                  sx={{ flex: { xs: '1 1 auto', sm: '0 0 auto' }, minWidth: { sm: 150 } }}
                 >
                   Manage My Sets
                 </Button>
