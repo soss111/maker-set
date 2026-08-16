@@ -220,10 +220,28 @@ router.post('/request-code', async (req, res) => {
         success: sendResult.success,
         testMode: sendResult.testMode,
         error: sendResult.error,
+        likelyFromOrAuthIssue: sendResult.likelyFromOrAuthIssue,
+        from: emailService.getFromAddress(),
       });
+
+      // Distinguish missing credentials vs SMTP reject (bad From / App Password).
+      if (sendResult.testMode) {
+        return res.status(503).json({
+          error:
+            'Email login is unavailable (SMTP not configured). Please sign in with your password, or ask an admin to set SMTP_USER/SMTP_PASS on the API.',
+          reason: 'smtp_not_configured',
+          password_login_available: true,
+        });
+      }
+
+      const fromHint = sendResult.likelyFromOrAuthIssue
+        ? ' With Gmail, SMTP_FROM must be the same address as SMTP_USER (or a verified “Send mail as” alias), and SMTP_PASS must be a Gmail App Password.'
+        : ' Check SMTP_USER, SMTP_PASS (App Password), and SMTP_FROM on the API host.';
+
       return res.status(503).json({
         error:
-          'Email login is unavailable (SMTP not configured). Please sign in with your password, or ask an admin to set SMTP_USER/SMTP_PASS on the API.',
+          `Email login could not send the code (SMTP send failed).${fromHint} Please sign in with your password for now.`,
+        reason: 'smtp_send_failed',
         password_login_available: true,
       });
     }

@@ -44,6 +44,13 @@ router.get('/', async (req, res) => {
       details: 'Multi-layer translation service',
     };
 
+    // SMTP readiness (no secrets): helps diagnose login-code failures
+    const smtpConfigured = Boolean(process.env.SMTP_USER && process.env.SMTP_PASS);
+    const smtpFrom =
+      (process.env.SMTP_FROM || '').trim() ||
+      (process.env.SMTP_USER || '').trim() ||
+      null;
+
     // Overall system health
     const overallHealth = databaseStatus.connected;
     const totalResponseTime = Date.now() - startTime;
@@ -56,6 +63,12 @@ router.get('/', async (req, res) => {
       environment: process.env.NODE_ENV || 'development',
       database: databaseStatus,
       translation: translationStatus,
+      email: {
+        smtpConfigured,
+        fromSet: Boolean(smtpFrom),
+        // Host only — never expose user/pass
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      },
       system: {
         uptime: process.uptime(),
         memory: process.memoryUsage(),

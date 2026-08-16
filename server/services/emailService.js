@@ -7,6 +7,18 @@ class EmailService {
     this.initializeTransporter();
   }
 
+  /**
+   * Gmail (and most providers) reject From addresses that don't match the
+   * authenticated mailbox. Prefer SMTP_FROM, then SMTP_USER, then a local default.
+   */
+  getFromAddress() {
+    const from = (process.env.SMTP_FROM || '').trim();
+    if (from) return from;
+    const user = (process.env.SMTP_USER || '').trim();
+    if (user) return user;
+    return 'noreply@makerset.com';
+  }
+
   initializeTransporter() {
     // Check if email configuration is available
     const emailConfig = {
@@ -35,6 +47,7 @@ class EmailService {
     } else {
       this.transporter = nodemailer.createTransport(emailConfig);
       this.isTestMode = false;
+      console.log('📧 SMTP configured. From address:', this.getFromAddress());
     }
   }
 
@@ -43,7 +56,7 @@ class EmailService {
       const orderSummary = this.generateOrderSummaryHTML(orderData);
       
       const mailOptions = {
-        from: process.env.SMTP_FROM || 'noreply@makerset.com',
+        from: this.getFromAddress(),
         to: customerEmail,
         subject: `Order Confirmation - ${orderData.order_number}`,
         html: orderSummary,
@@ -191,7 +204,7 @@ Thank you for your order!
   async sendLoginCode(email, code) {
     try {
       const mailOptions = {
-        from: process.env.SMTP_FROM || 'noreply@makerset.com',
+        from: this.getFromAddress(),
         to: email,
         subject: 'Your MakerSet login code',
         text: `Your MakerSet login code is ${code}. It expires in 10 minutes.`,
@@ -217,7 +230,15 @@ Thank you for your order!
       return { success: true, messageId: result.messageId, testMode: false };
     } catch (error) {
       console.error('📧 Error sending login code email:', error);
-      return { success: false, error: error.message, testMode: this.isTestMode };
+      const raw = String(error && error.message ? error.message : error);
+      // Safe, non-secret hint for common Gmail From / auth misconfiguration
+      const fromHint = /sender|from address|550|553|mailbox unavailable|invalid login|username and password|authentication|eauth|enalfrom/i.test(raw);
+      return {
+        success: false,
+        error: raw,
+        testMode: this.isTestMode,
+        likelyFromOrAuthIssue: fromHint,
+      };
     }
   }
 

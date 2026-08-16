@@ -37,9 +37,11 @@ In Render → Environment, set real SMTP credentials (example for Gmail + App Pa
 | `SMTP_PORT` | `587` |
 | `SMTP_USER` | your Gmail address |
 | `SMTP_PASS` | Gmail App Password |
-| `SMTP_FROM` | `MakerSet <noreply@yourdomain.com>` |
+| `SMTP_FROM` | **same Gmail address** (or leave unset — defaults to `SMTP_USER`) |
 
-Without these, login codes cannot be emailed in production (the UI will not show the code).
+**Gmail From rule:** `SMTP_FROM` must be the authenticated Gmail address (`SMTP_USER`) or a verified “Send mail as” alias. Values like `noreply@makerset.com` are rejected by Gmail and login codes will fail even when `SMTP_USER`/`SMTP_PASS` are set.
+
+Without working SMTP, login codes cannot be emailed in production (the UI will not show the code). Check `GET /api/health` → `email.smtpConfigured` after deploy.
 
 ## 2. Attach www.ltcc.ee on Netlify
 

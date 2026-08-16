@@ -44,8 +44,12 @@ From the repo root, `npm run dev` starts both together via `concurrently`.
 - Codes: `POST /api/auth/request-code`, `POST /api/auth/verify-code`. Password:
   `POST /api/auth/login`.
 - Codes expire in 10 minutes and are stored hashed in `login_codes`.
-- Without working `SMTP_USER`/`SMTP_PASS` on Render, code login returns **503** and the
-  UI switches to password. Set SMTP in the Render dashboard for real email codes.
+- Without working `SMTP_USER`/`SMTP_PASS` on Render, code login returns **503**
+  (`reason: smtp_not_configured`) and the UI switches to password.
+- If credentials are set but Gmail rejects the message (wrong **From** / App Password),
+  code login returns **503** (`reason: smtp_send_failed`). For Gmail, `SMTP_FROM` must
+  match `SMTP_USER` (or a verified alias); if unset, From defaults to `SMTP_USER`.
+- `GET /api/health` includes `email.smtpConfigured` (boolean only — no secrets).
 - Seeded admin for testing: `admin@makerset.com` / `admin123` (password).
 
 ### Production (Netlify + API)

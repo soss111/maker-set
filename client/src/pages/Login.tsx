@@ -55,7 +55,7 @@ const Login: React.FC = () => {
     } catch (err: any) {
       const msg = err.message || 'Failed to send login code.';
       // SMTP missing/broken → guide user to password login immediately
-      if (/smtp|email login is unavailable|not configured|password/i.test(msg)) {
+      if (/smtp|email login is unavailable|could not send|send failed|not configured|password/i.test(msg)) {
         switchToPassword(msg);
       } else {
         setError(msg);
@@ -227,7 +227,7 @@ const Login: React.FC = () => {
                       setCode('');
                     } catch (err: any) {
                       const msg = err.message || 'Failed to send login code.';
-                      if (/smtp|email login is unavailable|not configured|password/i.test(msg)) {
+                      if (/smtp|email login is unavailable|could not send|send failed|not configured|password/i.test(msg)) {
                         switchToPassword(msg);
                       } else {
                         setError(msg);
