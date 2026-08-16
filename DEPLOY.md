@@ -12,16 +12,18 @@ Netlify serves the React app. The Express + SQLite API runs on Render (or simila
 ## 1. Deploy the API (Render)
 
 1. [Render](https://render.com) → New → Blueprint → connect `soss111/maker-set`.
-2. Apply `render.yaml` (service `makerset-api` + disk).
+2. Apply `render.yaml` (service `makerset-api`).
 3. After deploy, copy the service URL, e.g. `https://makerset-api.onrender.com`.
-4. In Render → Environment set:
+4. In Render → Environment, set:
 
 | Variable | Value |
 | --- | --- |
-| `PUBLIC_URL` | `https://www.ltcc.ee` (preferred once proxy works) **or** temporarily `https://makerset-api.onrender.com` |
+| `PUBLIC_URL` | `https://makerset-api.onrender.com` (temporary) **or** `https://www.ltcc.ee` once the Netlify `/api` proxy works |
 | `CORS_ORIGIN` | `https://www.ltcc.ee,https://ltcc.ee,https://maker-set.netlify.app` |
 
 5. Health check: `https://makerset-api.onrender.com/api/health`
+
+**Free tier note:** Render free web services **cannot use disks**. SQLite and uploads are stored on the instance and **reset when the service redeploys**. Fine for bringing the site up; for permanent data, upgrade the plan and attach a disk at `/app/data` (then set `DB_FILE=/app/data/makerset.db` and `UPLOADS_DIR=/app/data/uploads`).
 
 Default admin on first boot: `admin@makerset.com` / `admin123` — change immediately.
 

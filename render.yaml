@@ -6,22 +6,20 @@ services:
     dockerfilePath: ./server/Dockerfile
     dockerContext: ./server
     healthCheckPath: /api/health
-    disk:
-      name: makerset-data
-      mountPath: /app/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: PORT
         value: "5001"
+      # Free tier has no persistent disk: DB/uploads live on the instance
+      # filesystem and reset on redeploy. Upgrade + add a disk later for permanence.
       - key: DB_FILE
-        value: /app/data/makerset.db
+        value: /app/database/makerset.db
       - key: UPLOADS_DIR
-        value: /app/data/uploads
+        value: /app/uploads
       - key: CORS_ORIGIN
         value: https://www.ltcc.ee,https://ltcc.ee,https://maker-set.netlify.app
-      # Prefer https://www.ltcc.ee once Netlify /api proxy is live; otherwise the Render URL
+      # Set after deploy to https://<service>.onrender.com (then later https://www.ltcc.ee)
       - key: PUBLIC_URL
         sync: false
       - key: JWT_SECRET
