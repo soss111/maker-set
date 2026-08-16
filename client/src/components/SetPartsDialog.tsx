@@ -30,7 +30,7 @@ import {
   Search as SearchIcon,
   Inventory as InventoryIcon,
 } from '@mui/icons-material';
-import { Set as SetType, setPartsApi, partsApi } from '../services/api';
+import { Set as SetType, apiUrl, partsApi, setPartsApi } from '../services/api';
 
 interface SetPartsDialogProps {
   open: boolean;
@@ -131,7 +131,7 @@ const SetPartsDialog: React.FC<SetPartsDialogProps> = ({
       setLoading(true);
       setError(null);
       
-      const response = await fetch('http://localhost:5001/api/set-parts', {
+      const response = await fetch(apiUrl('/set-parts'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -176,7 +176,7 @@ const SetPartsDialog: React.FC<SetPartsDialogProps> = ({
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`http://localhost:5001/api/set-parts/${setPartId}`, {
+      const response = await fetch(apiUrl(`/set-parts/${setPartId}`), {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
@@ -213,7 +213,7 @@ const SetPartsDialog: React.FC<SetPartsDialogProps> = ({
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`http://localhost:5001/api/set-parts/${setPartId}`, {
+      const response = await fetch(apiUrl(`/set-parts/${setPartId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ const SetPartsDialog: React.FC<SetPartsDialogProps> = ({
       setLoading(true);
       setError(null);
       
-      const response = await fetch(`http://localhost:5001/api/set-parts/${setPartId}`, {
+      const response = await fetch(apiUrl(`/set-parts/${setPartId}`), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

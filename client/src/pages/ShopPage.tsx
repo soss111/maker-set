@@ -57,7 +57,7 @@ import FloatingCart from '../components/FloatingCart';
 import ResponsiveImage from '../components/ResponsiveImage';
 import ManualGenerator from '../components/ManualGenerator';
 import SocialShare from '../components/SocialShare';
-import { setsApi, favoritesApi, ordersApi, shopApi, mediaApi, Set as SetType } from '../services/api';
+import { Set as SetType, apiUrl, favoritesApi, mediaApi, mediaUrl, ordersApi, setsApi, shopApi } from '../services/api';
 import { getProviderDisplayName } from '../utils/shopNameGenerator';
 
 const ShopPage: React.FC = () => {
@@ -219,7 +219,7 @@ const ShopPage: React.FC = () => {
       
       for (const key of keys) {
         try {
-          const response = await fetch(`http://localhost:5001/api/settings/${key}`, {
+          const response = await fetch(apiUrl(`/settings/${key}`), {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('authToken')}`
             }
@@ -558,7 +558,7 @@ const ShopPage: React.FC = () => {
       
       // Store invoice URL for manual access
       if (invoiceData && invoiceData.downloadUrl) {
-        const fullInvoiceUrl = `http://localhost:5001${invoiceData.downloadUrl}`;
+        const fullInvoiceUrl = mediaUrl(invoiceData.downloadUrl) || null;
         setInvoiceUrl(fullInvoiceUrl);
         setTimeout(() => setInvoiceUrl(null), 8000); // Clear after 8 seconds
       }
@@ -569,7 +569,7 @@ const ShopPage: React.FC = () => {
       // Automatically open invoice in new tab if available
       if (invoiceData && invoiceData.downloadUrl) {
         setTimeout(() => {
-          const invoiceUrl = `http://localhost:5001${invoiceData.downloadUrl}`;
+          const invoiceUrl = mediaUrl(invoiceData.downloadUrl);
           window.open(invoiceUrl, '_blank');
         }, 1000); // Small delay to ensure success message is shown first
       }
@@ -1481,7 +1481,7 @@ const ShopPage: React.FC = () => {
                     onShare={(platform) => {
                       // Track share
                       if (isAuthenticated && user?.user_id) {
-                        fetch(`http://localhost:5001/api/social-shares/track`, {
+                        fetch(apiUrl(`/social-shares/track`), {
                           method: 'POST',
                           headers: {
                             'Content-Type': 'application/json',

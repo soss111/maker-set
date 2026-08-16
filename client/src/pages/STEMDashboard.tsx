@@ -45,7 +45,7 @@ import {
 } from '../components/STEMComponents';
 import { stemColors } from '../theme/stemTheme';
 import { dashboardService, DashboardData } from '../services/dashboardService';
-import { ordersApi, setsApi } from '../services/api';
+import { apiUrl, ordersApi, setsApi } from '../services/api';
 import SystemSettingsDialog from '../components/SystemSettingsDialog';
 
 const STEMDashboard: React.FC = () => {
@@ -99,7 +99,7 @@ const STEMDashboard: React.FC = () => {
   const fetchAlerts = async () => {
     try {
       setAlertsLoading(true);
-      const response = await fetch('http://localhost:5001/api/system/alerts');
+      const response = await fetch(apiUrl('/system/alerts'));
       const result = await response.json();
       
       if (result.success) {
@@ -123,7 +123,7 @@ const STEMDashboard: React.FC = () => {
       
       // Test direct API call first
       try {
-        const directResponse = await fetch('http://localhost:5001/api/dashboard/stats');
+        const directResponse = await fetch(apiUrl('/dashboard/stats'));
         const directData = await directResponse.json();
         console.log('🔍 Direct API test:', directData);
       } catch (directError) {

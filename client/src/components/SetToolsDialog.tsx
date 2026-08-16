@@ -30,7 +30,7 @@ import {
   Search as SearchIcon,
   Build as BuildIcon,
 } from '@mui/icons-material';
-import { Set as SetType, setToolsApi, toolsApi } from '../services/api';
+import { Set as SetType, apiUrl, setToolsApi, toolsApi } from '../services/api';
 
 interface SetToolsDialogProps {
   open: boolean;
@@ -141,7 +141,7 @@ const SetToolsDialog: React.FC<SetToolsDialogProps> = ({
       setLoading(true);
       setError(null);
       
-      const response = await fetch('http://localhost:5001/api/set-tools', {
+      const response = await fetch(apiUrl('/set-tools'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

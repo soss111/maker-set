@@ -1,6 +1,17 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+function resolveDefaultApiBase(): string {
+  if (process.env.REACT_APP_API_URL) {
+    return process.env.REACT_APP_API_URL;
+  }
+  // Production builds (Netlify) use same-origin /api and rely on Netlify proxy redirects.
+  if (process.env.NODE_ENV === 'production') {
+    return '/api';
+  }
+  return 'http://localhost:5001/api';
+}
+
+const API_BASE_URL = resolveDefaultApiBase();
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -9,9 +20,28 @@ const api = axios.create({
   },
 });
 
-/** Returns current API base URL (e.g. for fetch). Can be updated from System Settings. */
+/** Returns current API base URL ending with /api (e.g. for fetch). */
 export function getApiBaseUrl(): string {
   return api.defaults.baseURL || API_BASE_URL;
+}
+
+/** API origin without trailing /api — for uploads, invoices, static media. */
+export function getApiOrigin(): string {
+  return getApiBaseUrl().replace(/\/api\/?$/, '');
+}
+
+/** Build a full API path, e.g. apiUrl('/users/profile'). */
+export function apiUrl(path: string): string {
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return `${getApiBaseUrl()}${normalized}`;
+}
+
+/** Resolve media/upload paths against the API origin. */
+export function mediaUrl(path?: string | null): string | undefined {
+  if (!path) return undefined;
+  if (/^https?:\/\//i.test(path) || path.startsWith('data:')) return path;
+  const normalized = path.startsWith('/') ? path : `/${path}`;
+  return `${getApiOrigin()}${normalized}`;
 }
 
 /** Set API base URL at runtime (e.g. from System Settings public_url). */

@@ -48,6 +48,15 @@ From the repo root, `npm run dev` starts both together via `concurrently`.
   the email is sent (no `dev_code` in the response).
 - Seeded admin for testing: `admin@makerset.com` / `admin123` (password fallback).
 
+### Production (Netlify + API)
+
+- Netlify hosts **only** the React client. Full production setup is documented in
+  `DEPLOY.md` (Render blueprint in `render.yaml`, Netlify `API_PROXY_TARGET` proxy).
+- Client production builds default `REACT_APP_API_URL` to `/api` (same-origin). Do not
+  leave the Netlify bundle calling `localhost:5001`.
+- Server binds `0.0.0.0`, supports `DB_FILE` / `UPLOADS_DIR`, and comma-separated
+  `CORS_ORIGIN` for production.
+
 ### Client dependency install caveat
 
 - The client **must** be installed with `npm install --legacy-peer-deps`. Plain

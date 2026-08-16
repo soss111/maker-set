@@ -54,7 +54,7 @@ import {
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import AIMotivationAssistant from '../components/AIMotivationAssistant';
-import { setsApi, partsApi, ordersApi, authApi } from '../services/api';
+import { apiUrl, authApi, ordersApi, partsApi, setsApi } from '../services/api';
 import { dashboardService } from '../services/dashboardService';
 
 interface AISystemStats {
@@ -223,7 +223,7 @@ const AIAssistantPage: React.FC = () => {
     const generateUserRoles = async () => {
       try {
         // Fetch real user role statistics
-        const roleStatsResponse = await fetch('http://localhost:5001/api/users/role-stats');
+        const roleStatsResponse = await fetch(apiUrl('/users/role-stats'));
         const roleStatsData = await roleStatsResponse.json();
         const roleCounts = roleStatsData.success ? roleStatsData.data : {};
 

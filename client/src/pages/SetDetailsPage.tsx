@@ -43,7 +43,7 @@ import {
 } from '@mui/icons-material';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useCart } from '../contexts/CartContext';
-import { Set as SetType, Part, Media } from '../services/api';
+import { Media, Part, Set as SetType, apiUrl } from '../services/api';
 
 interface ProviderSet {
   provider_set_id: number;
@@ -108,7 +108,7 @@ const SetDetailsPage: React.FC = () => {
       setLoading(true);
       
       // Fetch provider set details
-      const providerSetResponse = await fetch(`http://localhost:5001/api/provider-sets/${setId}`, {
+      const providerSetResponse = await fetch(apiUrl(`/provider-sets/${setId}`), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json',
@@ -123,7 +123,7 @@ const SetDetailsPage: React.FC = () => {
       setProviderSet(providerSetData.provider_set);
 
       // Fetch set parts
-      const partsResponse = await fetch(`http://localhost:5001/api/set-parts/${providerSetData.provider_set.set_id}`, {
+      const partsResponse = await fetch(apiUrl(`/set-parts/${providerSetData.provider_set.set_id}`), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json',
@@ -136,7 +136,7 @@ const SetDetailsPage: React.FC = () => {
       }
 
       // Fetch set media/photos
-      const mediaResponse = await fetch(`http://localhost:5001/api/media/set/${providerSetData.provider_set.set_id}`, {
+      const mediaResponse = await fetch(apiUrl(`/media/set/${providerSetData.provider_set.set_id}`), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json',
@@ -149,7 +149,7 @@ const SetDetailsPage: React.FC = () => {
       }
 
       // Fetch set instructions
-      const instructionsResponse = await fetch(`http://localhost:5001/api/instructions/set/${providerSetData.provider_set.set_id}`, {
+      const instructionsResponse = await fetch(apiUrl(`/instructions/set/${providerSetData.provider_set.set_id}`), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('auth_token')}`,
           'Content-Type': 'application/json',

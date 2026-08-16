@@ -33,6 +33,7 @@ import {
   TableRow,
   Paper,
 } from '@mui/material';
+import { apiUrl } from '../services/api';
 import {
   Close as CloseIcon,
   Save as SaveIcon,
@@ -473,7 +474,7 @@ const SystemSettingsDialog: React.FC<SystemSettingsDialogProps> = ({ open, onClo
       
       // Save each setting
       for (const setting of settingsToSave) {
-        const response = await fetch(`http://localhost:5001/api/settings/${setting.key}`, {
+        const response = await fetch(apiUrl(`/settings/${setting.key}`), {
           method: 'PUT',
           headers,
           body: JSON.stringify({ 

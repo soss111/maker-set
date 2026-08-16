@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
-import { Set as SetType, setsApi, cartReservationApi } from '../services/api';
+import { Set as SetType, apiUrl, cartReservationApi, setsApi } from '../services/api';
 import { useAuth } from './AuthContext';
 
 export interface CartItem {
@@ -95,7 +95,7 @@ export const CartProvider: React.FC<CartProviderProps> = ({ children }) => {
   useEffect(() => {
     const fetchShippingCost = async () => {
       try {
-        const response = await fetch(`${process.env.REACT_APP_API_URL || 'http://localhost:5001/api'}/settings/shipping_handling_cost`);
+        const response = await fetch(apiUrl('/settings/shipping_handling_cost'));
         if (response.ok) {
           const data = await response.json();
           const cost = parseFloat(data.setting?.setting_value || data.value || '15');

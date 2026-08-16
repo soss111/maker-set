@@ -41,7 +41,7 @@ import {
 } from '@mui/icons-material';
 
 import { useAuth } from '../contexts/AuthContext';
-import { setsApi, mediaApi, setPartsApi, providerApi, authApi } from '../services/api';
+import { apiUrl, authApi, mediaApi, providerApi, setPartsApi, setsApi } from '../services/api';
 import ProviderSetCreationWizard from './ProviderSetCreationWizard';
 import ProviderPaymentStats from './ProviderPaymentStats';
 
@@ -102,7 +102,7 @@ const ProviderSetManagement: React.FC = () => {
   const fetchUserProfile = async () => {
     try {
       // Try /api/users/profile first (the actual endpoint that includes provider_markup_percentage)
-      const response = await fetch('http://localhost:5001/api/users/profile', {
+      const response = await fetch(apiUrl('/users/profile'), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }

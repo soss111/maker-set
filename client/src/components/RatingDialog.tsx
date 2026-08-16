@@ -19,7 +19,7 @@ import {
   Close as CloseIcon,
   Send as SendIcon,
 } from '@mui/icons-material';
-import { Set } from '../services/api';
+import { Set, apiUrl } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface RatingDialogProps {
@@ -82,7 +82,7 @@ const RatingDialog: React.FC<RatingDialogProps> = ({
         throw new Error('Please log in to submit a rating');
       }
       
-      const response = await fetch('http://localhost:5001/api/ratings', {
+      const response = await fetch(apiUrl('/ratings'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

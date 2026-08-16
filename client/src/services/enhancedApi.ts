@@ -5,6 +5,7 @@
 
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import ErrorHandler from '../utils/errorHandler';
+import { getApiBaseUrl } from '../services/api';
 
 interface ApiResponse<T = any> {
   success: boolean;
@@ -38,7 +39,7 @@ class EnhancedApiService {
     };
 
     this.api = axios.create({
-      baseURL: process.env.REACT_APP_API_URL || 'http://localhost:5001/api',
+      baseURL: getApiBaseUrl(),
       timeout: 30000,
       headers: {
         'Content-Type': 'application/json',

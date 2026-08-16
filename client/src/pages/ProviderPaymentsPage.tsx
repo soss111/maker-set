@@ -44,7 +44,7 @@ import {
   BarChart as BarChartIcon,
   PieChart as PieChartIcon,
 } from '@mui/icons-material';
-import { ordersApi, setsApi, providerPaymentsApi } from '../services/api';
+import { apiUrl, ordersApi, providerPaymentsApi, setsApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProviderPaymentData {
@@ -107,7 +107,7 @@ const ProviderPaymentsPage: React.FC = () => {
     try {
       setLoading(true);
       // This would call a new API endpoint to get monthly reports
-      const response = await fetch('http://localhost:5001/api/provider-payments/monthly-reports', {
+      const response = await fetch(apiUrl('/provider-payments/monthly-reports'), {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken')}`
         }
@@ -161,7 +161,7 @@ const ProviderPaymentsPage: React.FC = () => {
 
   const downloadProviderInvoice = async (provider: ProviderPaymentData) => {
     try {
-      const response = await fetch(`http://localhost:5001/api/provider-payments/invoice/${provider.provider_id}`, {
+      const response = await fetch(apiUrl(`/provider-payments/invoice/${provider.provider_id}`), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -193,7 +193,7 @@ const ProviderPaymentsPage: React.FC = () => {
 
   const emailProviderInvoice = async (provider: ProviderPaymentData) => {
     try {
-      const response = await fetch('http://localhost:5001/api/provider-payments/email-invoice', {
+      const response = await fetch(apiUrl('/provider-payments/email-invoice'), {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
@@ -248,7 +248,7 @@ const ProviderPaymentsPage: React.FC = () => {
       
       for (const provider of currentReport.providers) {
         try {
-          await fetch(`http://localhost:5001/api/provider-payments/email-invoice/${provider.provider_id}`, {
+          await fetch(apiUrl(`/provider-payments/email-invoice/${provider.provider_id}`), {
             method: 'POST',
             headers: { 
               'Content-Type': 'application/json',

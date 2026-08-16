@@ -13,7 +13,7 @@ import {
   Error as ErrorIcon, Info as InfoIcon, ExpandMore as ExpandMoreIcon, AttachMoney as MoneyIcon,
   TrendingUp as TrendingUpIcon, Assessment as AssessmentIcon
 } from '@mui/icons-material';
-import { ordersApi } from '../services/api';
+import { apiUrl, ordersApi } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
 interface ProviderReport {
@@ -422,7 +422,7 @@ const ProviderReportsSection: React.FC = () => {
                           startIcon={<DownloadIcon />}
                           onClick={async () => {
                             try {
-                              const response = await fetch(`http://localhost:5001/api/provider-payments/invoice/${user?.user_id}`, {
+                              const response = await fetch(apiUrl(`/provider-payments/invoice/${user?.user_id}`), {
                                 method: 'POST',
                                 headers: { 
                                   'Content-Type': 'application/json',

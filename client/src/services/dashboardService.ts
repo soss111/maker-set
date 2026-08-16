@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../services/api';
 
 export interface DashboardData {
   inventory: {
@@ -55,7 +56,9 @@ export interface DashboardData {
 }
 
 class DashboardService {
-  private baseURL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+  private get baseURL() {
+    return getApiBaseUrl();
+  }
 
   async fetchDashboardData(): Promise<DashboardData> {
     try {

@@ -24,6 +24,7 @@ import {
   Paper,
   Stack,
 } from '@mui/material';
+import { mediaUrl } from '../services/api';
 import {
   ShoppingCart as CartIcon,
   Add as AddIcon,
@@ -191,7 +192,7 @@ const ShoppingCart: React.FC<ShoppingCartProps> = ({ onCheckout }) => {
                   >
                     <ListItemAvatar>
                       <Avatar
-                        src={item.image_url ? `http://localhost:5001${item.image_url}` : undefined}
+                        src={item.image_url ? mediaUrl(item.image_url) : undefined}
                         variant="rounded"
                         sx={{ width: 60, height: 60 }}
                       >

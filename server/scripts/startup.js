@@ -499,12 +499,21 @@ async function startup() {
   // Check file system
   console.log('📁 Checking file system...');
   try {
-    const uploadsDir = path.join(__dirname, '../uploads');
+    const uploadsDir = process.env.UPLOADS_DIR
+      ? path.resolve(process.env.UPLOADS_DIR)
+      : path.join(__dirname, '../uploads');
     if (!fs.existsSync(uploadsDir)) {
       fs.mkdirSync(uploadsDir, { recursive: true });
       console.log('📁 Created uploads directory');
     } else {
       console.log('✅ Uploads directory exists');
+    }
+    if (process.env.DB_FILE) {
+      const dbDir = path.dirname(path.resolve(process.env.DB_FILE));
+      if (!fs.existsSync(dbDir)) {
+        fs.mkdirSync(dbDir, { recursive: true });
+        console.log('📁 Created database directory');
+      }
     }
   } catch (error) {
     console.error('❌ File system check failed:', error.message);

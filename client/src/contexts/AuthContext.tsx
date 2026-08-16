@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authApi } from '../services/api';
+import { apiUrl, authApi } from '../services/api';
 
 interface User {
   user_id: number;
@@ -71,7 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         try {
           setToken(storedToken);
           // Use the users API endpoint to get complete profile data
-          const response = await fetch('http://localhost:5001/api/users/profile', {
+          const response = await fetch(apiUrl('/users/profile'), {
             headers: {
               'Authorization': `Bearer ${storedToken}`
             }
@@ -191,7 +191,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const updateProfile = async (userData: Partial<User>) => {
     try {
-      const response = await fetch('http://localhost:5001/api/users/profile', {
+      const response = await fetch(apiUrl('/users/profile'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -1,0 +1,28 @@
+services:
+  - type: web
+    name: makerset-api
+    runtime: docker
+    plan: free
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    healthCheckPath: /api/health
+    disk:
+      name: makerset-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "5001"
+      - key: DB_FILE
+        value: /app/data/makerset.db
+      - key: UPLOADS_DIR
+        value: /app/data/uploads
+      - key: CORS_ORIGIN
+        value: https://maker-set.netlify.app
+      # After first deploy, set this to https://<your-service>.onrender.com in the Render dashboard
+      - key: PUBLIC_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true

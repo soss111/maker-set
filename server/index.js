@@ -1,3 +1,4 @@
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -14,7 +15,25 @@ const PORT = process.env.PORT || 5001;
 const CORS_ORIGIN = process.env.CORS_ORIGIN || 'http://localhost:3000';
 // Base URL for file links (uploads, media). Set PUBLIC_URL in production (e.g. https://api.yourdomain.com).
 const PUBLIC_URL = process.env.PUBLIC_URL || `http://localhost:${PORT}`;
+const UPLOADS_DIR = process.env.UPLOADS_DIR
+  ? path.resolve(process.env.UPLOADS_DIR)
+  : path.join(__dirname, 'uploads');
 app.set('baseUrl', PUBLIC_URL);
+app.set('uploadsDir', UPLOADS_DIR);
+
+function resolveCorsOrigin(origin, callback) {
+  if (process.env.NODE_ENV !== 'production') {
+    return callback(null, true);
+  }
+  const allowed = String(CORS_ORIGIN)
+    .split(',')
+    .map((o) => o.trim())
+    .filter(Boolean);
+  if (!origin || allowed.includes(origin) || allowed.includes('*')) {
+    return callback(null, true);
+  }
+  return callback(new Error(`CORS blocked for origin: ${origin}`));
+}
 
 // Security middleware (CSP allows API origin so media and API calls work when frontend is on another host)
 app.use(helmet({
@@ -40,7 +59,7 @@ app.use(limiter);
 
 // CORS configuration
 app.use(cors({
-  origin: process.env.NODE_ENV === 'development' ? true : CORS_ORIGIN,
+  origin: resolveCorsOrigin,
   credentials: true
 }));
 
@@ -55,7 +74,7 @@ app.use('/uploads', (req, res, next) => {
   res.header('Access-Control-Allow-Methods', 'GET');
   res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
   next();
-}, express.static('uploads'));
+}, express.static(UPLOADS_DIR));
 
 // Initialize application and apply public_url from DB if set
 startup().then(async (results) => {
@@ -253,7 +272,7 @@ app.use('*', (req, res) => {
 app.use(globalErrorHandler);
 
 // Graceful shutdown handling
-const server = app.listen(PORT, () => {
+const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌍 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`🔗 CORS Origin: ${CORS_ORIGIN}`);

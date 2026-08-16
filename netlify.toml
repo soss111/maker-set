@@ -1,7 +1,15 @@
-# Netlify build config for MakerSet client (monorepo: client app in client/)
+# Netlify: MakerSet client (monorepo). API is proxied when API_PROXY_TARGET is set.
 [build]
-  command = "cd client && npm install --legacy-peer-deps && npm run build"
+  command = "bash scripts/netlify-build.sh"
   publish = "client/build"
 
 [build.environment]
   CI = "false"
+  # Same-origin /api calls; Netlify proxies to the real backend when API_PROXY_TARGET is set.
+  REACT_APP_API_URL = "/api"
+
+# SPA fallback (also written into build/_redirects by the build script)
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

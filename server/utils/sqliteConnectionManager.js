@@ -11,7 +11,9 @@ class SQLiteConnectionManager {
   constructor() {
     this.db = null;
     this.isConnected = false;
-    this.dbPath = path.join(__dirname, '..', 'database', 'makerset.db');
+    this.dbPath = process.env.DB_FILE
+      ? path.resolve(process.env.DB_FILE)
+      : path.join(__dirname, '..', 'database', 'makerset.db');
   }
 
   /**
@@ -21,6 +23,12 @@ class SQLiteConnectionManager {
     return new Promise((resolve, reject) => {
       try {
         console.log('🔌 Initializing SQLite database connection...');
+
+        const fs = require('fs');
+        const dbDir = path.dirname(this.dbPath);
+        if (!fs.existsSync(dbDir)) {
+          fs.mkdirSync(dbDir, { recursive: true });
+        }
         
         this.db = new sqlite3.Database(this.dbPath, (err) => {
           if (err) {

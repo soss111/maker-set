@@ -22,7 +22,7 @@ import {
 } from '@mui/icons-material';
 import { Switch, FormControlLabel } from '@mui/material';
 import { useLanguage } from '../contexts/LanguageContext';
-import api, { setApiBaseUrl } from '../services/api';
+import api, { apiUrl, setApiBaseUrl } from '../services/api';
 
 interface SystemSettings {
   shipping_handling_cost: number;
@@ -549,7 +549,7 @@ const SystemSettingsPage: React.FC = () => {
                   ];
                   
                   for (const msg of messagesToSave) {
-                    const response = await fetch(`http://localhost:5001/api/settings/${msg.key}`, {
+                    const response = await fetch(apiUrl(`/settings/${msg.key}`), {
                       method: 'PUT',
                       headers: {
                         'Content-Type': 'application/json',

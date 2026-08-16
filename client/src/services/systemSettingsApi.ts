@@ -5,8 +5,7 @@
  */
 
 import axios from 'axios';
-
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5001/api';
+import { getApiBaseUrl } from '../services/api';
 
 function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('authToken');
@@ -16,7 +15,9 @@ function getAuthHeaders(): Record<string, string> {
 }
 
 class SystemSettingsApiService {
-  private baseURL = `${API_BASE_URL}/system`;
+  private get baseURL() {
+    return `${getApiBaseUrl()}/system`;
+  }
 
   /**
    * Get all system settings

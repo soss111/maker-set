@@ -21,7 +21,7 @@ import {
   RateReview as RateReviewIcon,
 } from '@mui/icons-material';
 import { useNavigate, useParams } from 'react-router-dom';
-import { setsApi } from '../services/api';
+import { apiUrl, setsApi } from '../services/api';
 import RatingDialog from './RatingDialog';
 
 interface Review {
@@ -57,7 +57,7 @@ const SetReviewsPage: React.FC = () => {
 
   const fetchReviewsData = async () => {
     try {
-      const response = await fetch(`http://localhost:5001/api/ratings/set/${setId}`);
+      const response = await fetch(apiUrl(`/ratings/set/${setId}`));
       const data = await response.json();
       
       if (data.success) {
