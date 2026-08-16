@@ -27,6 +27,20 @@ Netlify serves the React app. The Express + SQLite API runs on Render (or simila
 
 Default admin on first boot: `admin@makerset.com` / `admin123` — change immediately.
 
+### Email (required for 6-digit login)
+
+In Render → Environment, set real SMTP credentials (example for Gmail + App Password):
+
+| Variable | Example |
+| --- | --- |
+| `SMTP_HOST` | `smtp.gmail.com` |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | your Gmail address |
+| `SMTP_PASS` | Gmail App Password |
+| `SMTP_FROM` | `MakerSet <noreply@yourdomain.com>` |
+
+Without these, login codes cannot be emailed in production (the UI will not show the code).
+
 ## 2. Attach www.ltcc.ee on Netlify
 
 1. Netlify → your MakerSet site → **Domain management** → **Add domain** → `www.ltcc.ee`.
