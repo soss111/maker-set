@@ -753,11 +753,18 @@ const ShopPage: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ width: '100%', maxWidth: '100%', overflowX: 'hidden', boxSizing: 'border-box' }}>
       {/* Header */}
-      <Box mb={3} display="flex" justifyContent="space-between" alignItems="center">
-        <Box>
-          <Typography variant="h4" component="h1">
+      <Box
+        mb={3}
+        display="flex"
+        flexDirection={{ xs: 'column', sm: 'row' }}
+        justifyContent="space-between"
+        alignItems={{ xs: 'stretch', sm: 'center' }}
+        gap={2}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="h4" component="h1" sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
             {t('shop.title') || 'MakerSets Shop'}
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -798,9 +805,9 @@ const ShopPage: React.FC = () => {
           }}
         />
 
-        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap">
+        <Box display="flex" gap={2} alignItems="center" flexWrap="wrap" sx={{ width: '100%' }}>
           {/* Category Filter */}
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
             <InputLabel id="category-filter-label">Category</InputLabel>
             <Select
               id="category-filter"
@@ -819,7 +826,7 @@ const ShopPage: React.FC = () => {
           </FormControl>
 
           {/* Difficulty Filter */}
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 150 }, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
             <InputLabel id="difficulty-filter-label">Difficulty</InputLabel>
             <Select
               id="difficulty-filter"
@@ -838,7 +845,7 @@ const ShopPage: React.FC = () => {
           </FormControl>
 
           {/* Sorting */}
-          <FormControl size="small" sx={{ minWidth: 120 }}>
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 120 }, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
             <InputLabel id="sort-by-label">Sort By</InputLabel>
             <Select
               id="sort-by"
@@ -854,7 +861,7 @@ const ShopPage: React.FC = () => {
             </Select>
           </FormControl>
 
-          <FormControl size="small" sx={{ minWidth: 100 }}>
+          <FormControl size="small" sx={{ minWidth: { xs: '100%', sm: 100 }, flex: { xs: '1 1 100%', sm: '0 0 auto' } }}>
             <InputLabel id="sort-order-label">Order</InputLabel>
             <Select
               id="sort-order"

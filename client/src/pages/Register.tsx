@@ -71,24 +71,43 @@ const Register: React.FC = () => {
   };
 
   return (
-    <Container component="main" maxWidth="sm">
+    <Container
+      component="main"
+      maxWidth="sm"
+      sx={{ px: { xs: 2, sm: 3 }, width: '100%', boxSizing: 'border-box' }}
+    >
       <Box
         sx={{
-          marginTop: 8,
+          marginTop: { xs: 2, sm: 8 },
+          marginBottom: { xs: 3, sm: 4 },
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
+          width: '100%',
         }}
       >
-        <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
+        <Paper
+          elevation={3}
+          sx={{
+            padding: { xs: 2, sm: 4 },
+            width: '100%',
+            maxWidth: '100%',
+            boxSizing: 'border-box',
+          }}
+        >
           <Box
             sx={{
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
+              width: '100%',
             }}
           >
-            <Typography component="h1" variant="h4" sx={{ mb: 3 }}>
+            <Typography
+              component="h1"
+              variant="h4"
+              sx={{ mb: 3, fontSize: { xs: '1.5rem', sm: '2.125rem' }, textAlign: 'center' }}
+            >
               Sign Up
             </Typography>
             

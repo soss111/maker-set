@@ -315,23 +315,40 @@ const ProviderSetManagement: React.FC = () => {
   }
 
   return (
-    <Box sx={{ p: 3, maxWidth: '1200px', mx: 'auto' }}>
+    <Box sx={{ p: { xs: 0, sm: 2, md: 3 }, maxWidth: '1200px', mx: 'auto', width: '100%', boxSizing: 'border-box' }}>
       {/* Header */}
-      <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Box>
-          <Typography variant="h4" component="h1" gutterBottom>
+      <Box
+        sx={{
+          mb: 3,
+          display: 'flex',
+          flexDirection: { xs: 'column', sm: 'row' },
+          justifyContent: 'space-between',
+          alignItems: { xs: 'stretch', sm: 'center' },
+          gap: 2,
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          <Typography variant="h4" component="h1" gutterBottom sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>
             My Provider Sets
           </Typography>
           <Typography variant="body2" color="text.secondary">
             Manage your sets and view payment statistics
           </Typography>
         </Box>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box
+          sx={{
+            display: 'flex',
+            gap: 1,
+            flexWrap: 'wrap',
+            alignItems: 'center',
+          }}
+        >
           <Button
             variant="contained"
             startIcon={<AddIcon />}
             onClick={handleCreateSet}
-            sx={{ mr: 2 }}
+            fullWidth={false}
+            sx={{ flex: { xs: '1 1 100%', sm: '0 0 auto' }, mr: { sm: 1 } }}
           >
             Create New Set
           </Button>
@@ -353,10 +370,16 @@ const ProviderSetManagement: React.FC = () => {
       </Box>
 
       {/* Tabs */}
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-        <Tabs value={activeTab} onChange={(e, newValue) => setActiveTab(newValue)}>
-          <Tab label="My Sets" icon={<InventoryIcon />} />
-          <Tab label="Payment Statistics" icon={<CreditCardIcon />} />
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3, overflowX: 'auto' }}>
+        <Tabs
+          value={activeTab}
+          onChange={(e, newValue) => setActiveTab(newValue)}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
+          <Tab label="My Sets" icon={<InventoryIcon />} iconPosition="start" />
+          <Tab label="Payment Statistics" icon={<CreditCardIcon />} iconPosition="start" />
         </Tabs>
       </Box>
 
@@ -368,9 +391,18 @@ const ProviderSetManagement: React.FC = () => {
             severity={systemCommissionPercentage > 30 ? "warning" : "info"} 
             sx={{ mb: 3 }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-              <Box>
-                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: { xs: 'column', sm: 'row' },
+                alignItems: { xs: 'flex-start', sm: 'center' },
+                justifyContent: 'space-between',
+                width: '100%',
+                gap: 1,
+              }}
+            >
+              <Box sx={{ minWidth: 0 }}>
+                <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                   <CreditCardIcon />
                   Commission Structure
                 </Typography>

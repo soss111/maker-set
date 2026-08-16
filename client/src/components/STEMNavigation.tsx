@@ -597,52 +597,67 @@ const STEMNavigation: React.FC<STEMNavigationProps> = ({
           zIndex: (theme) => theme.zIndex.drawer + 1,
         }}
       >
-        <Toolbar>
+        <Toolbar
+          sx={{
+            gap: { xs: 0.5, sm: 1 },
+            minHeight: { xs: 56, sm: 64 },
+            px: { xs: 1, sm: 2 },
+            overflow: 'hidden',
+          }}
+        >
           <IconButton
             color="inherit"
             aria-label="open drawer"
             edge="start"
             onClick={handleDrawerToggle}
-            sx={{ mr: 2 }}
+            sx={{ mr: { xs: 0.5, sm: 2 }, flexShrink: 0 }}
           >
             <MenuIcon />
           </IconButton>
 
-          <Box display="flex" alignItems="center" sx={{ flexGrow: 1 }}>
-            <EngineeringIcon sx={{ mr: 1 }} />
+          <Box display="flex" alignItems="center" sx={{ flexGrow: 1, minWidth: 0, overflow: 'hidden' }}>
+            <EngineeringIcon sx={{ mr: { xs: 0.5, sm: 1 }, flexShrink: 0, display: { xs: 'none', sm: 'block' } }} />
             {/* Show provider shop name for providers, platform name for others */}
             {(() => {
-              // Debug logging
-              if (user?.role === 'provider') {
-                console.log('🔍 PROVIDER DETECTED - User:', { 
-                  role: user.role, 
-                  user_id: user.user_id,
-                  email: user.email 
-                });
-              }
-              
               if (user?.role === 'provider' && user?.user_id) {
                 const shopName = generateShopName({ userId: user.user_id });
-                console.log('🏪 SHOWING SHOP NAME:', shopName);
                 return (
-                  <Typography variant="h6" component="div" fontWeight={700}>
-                    🏪 {shopName}
-                  </Typography>
-                );
-              } else {
-                return (
-                  <Typography variant="h6" component="div" fontWeight={700}>
-                    STEM Engineering Platform
+                  <Typography
+                    variant="h6"
+                    component="div"
+                    fontWeight={700}
+                    noWrap
+                    sx={{ fontSize: { xs: '0.95rem', sm: '1.25rem' } }}
+                  >
+                    {shopName}
                   </Typography>
                 );
               }
+              return (
+                <Typography
+                  variant="h6"
+                  component="div"
+                  fontWeight={700}
+                  noWrap
+                  sx={{ fontSize: { xs: '0.95rem', sm: '1.25rem' } }}
+                >
+                  <Box component="span" sx={{ display: { xs: 'none', md: 'inline' } }}>
+                    STEM Engineering Platform
+                  </Box>
+                  <Box component="span" sx={{ display: { xs: 'inline', md: 'none' } }}>
+                    MakerSet
+                  </Box>
+                </Typography>
+              );
             })()}
-            {/* Current Role Indicator */}
+            {/* Current Role Indicator — hide on very small screens to save space */}
             <Chip 
               label={currentRole?.toUpperCase() || 'PUBLIC'} 
               size="small" 
               sx={{ 
-                ml: 2, 
+                ml: 1,
+                display: { xs: 'none', sm: 'inline-flex' },
+                flexShrink: 0,
                 bgcolor: currentRole === 'admin' ? 'error.main' : 
                         currentRole === 'production' ? 'secondary.main' :
                         currentRole === 'provider' ? 'primary.main' : 'grey.500',
@@ -653,9 +668,9 @@ const STEMNavigation: React.FC<STEMNavigationProps> = ({
             />
           </Box>
 
-          <Box display="flex" alignItems="center" gap={1}>
-            {/* Language Selector */}
-            <FormControl size="small" sx={{ minWidth: 80 }}>
+          <Box display="flex" alignItems="center" gap={{ xs: 0.5, sm: 1 }} sx={{ flexShrink: 0 }}>
+            {/* Language Selector — drawer has languages on mobile */}
+            <FormControl size="small" sx={{ minWidth: 64, display: { xs: 'none', sm: 'inline-flex' } }}>
               <Select
                 id="language-selector"
                 name="language-selector"
@@ -716,9 +731,9 @@ const STEMNavigation: React.FC<STEMNavigationProps> = ({
               </Select>
             </FormControl>
 
-            {/* Role Switcher - Only visible for admin users */}
+            {/* Role Switcher - Only visible for admin users (desktop; crowded on phone) */}
             {isAdmin && (
-              <FormControl size="small" sx={{ minWidth: 120 }}>
+              <FormControl size="small" sx={{ minWidth: 120, display: { xs: 'none', md: 'inline-flex' } }}>
                 <Select
                   id="role-switcher"
                   name="role-switcher"

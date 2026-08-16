@@ -26,8 +26,10 @@ import {
   CardContent,
   Grid,
   IconButton,
-  Tooltip
+  Tooltip,
+  useMediaQuery,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   Close as CloseIcon,
   Save as SaveIcon,
@@ -80,6 +82,8 @@ const ProviderSetCreationWizard: React.FC<ProviderSetCreationWizardProps> = ({
 }) => {
   const { t } = useLanguage();
   const { user } = useAuth();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [activeStep, setActiveStep] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -760,7 +764,14 @@ const ProviderSetCreationWizard: React.FC<ProviderSetCreationWizardProps> = ({
 
   return (
     <>
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      <Dialog
+        open={open}
+        onClose={handleClose}
+        maxWidth="md"
+        fullWidth
+        fullScreen={isMobile}
+        scroll="paper"
+      >
         <DialogTitle>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <Typography variant="h6">{editingSet ? 'Edit Set' : 'Create New Set'}</Typography>
@@ -770,8 +781,12 @@ const ProviderSetCreationWizard: React.FC<ProviderSetCreationWizardProps> = ({
           </Box>
         </DialogTitle>
         
-        <DialogContent>
-          <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
+        <DialogContent sx={{ px: { xs: 2, sm: 3 } }}>
+          <Stepper
+            activeStep={activeStep}
+            orientation={isMobile ? 'vertical' : 'horizontal'}
+            sx={{ mb: 3 }}
+          >
             {steps.map((label) => (
               <Step key={label}>
                 <StepLabel>{label}</StepLabel>

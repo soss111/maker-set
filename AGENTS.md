@@ -75,6 +75,12 @@ From the repo root, `npm run dev` starts both together via `concurrently`.
 - **Render free tier has no persistent disk** — each redeploy resets SQLite. Provider
   sets disappear unless you upgrade Render and attach a disk for `DB_FILE`.
 
+### Mobile layout
+
+- App shell uses temporary drawer on `xs` and permanent drawer from `sm+`; main
+  content must keep `ml: 0` on mobile and `overflow-x: hidden` so pages fit the
+  viewport. Prefer responsive `p` / stacked headers over fixed desktop-only rows.
+
 ### Client dependency install caveat
 
 - The client **must** be installed with `npm install --legacy-peer-deps`. Plain

@@ -120,7 +120,15 @@ const App: React.FC = () => {
                     v7_relativeSplatPath: true
                   }}
                 >
-                  <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+                  <Box
+                    sx={{
+                      display: 'flex',
+                      minHeight: '100vh',
+                      width: '100%',
+                      maxWidth: '100%',
+                      overflowX: 'hidden',
+                    }}
+                  >
                     <STEMNavigation />
                     {isHealthMonitorVisible && (
                       <SystemHealthMonitor 
@@ -131,10 +139,17 @@ const App: React.FC = () => {
                     <Box 
                       component="main" 
                       sx={{ 
-                        flexGrow: 1, 
-                        p: 3,
-                        mt: 8, // Account for fixed AppBar
-                        ml: { sm: '280px' }, // Account for fixed drawer
+                        flexGrow: 1,
+                        flexBasis: 0,
+                        minWidth: 0,
+                        width: { xs: '100%', sm: 'calc(100% - 280px)' },
+                        maxWidth: '100%',
+                        p: { xs: 1.5, sm: 2, md: 3 },
+                        pt: { xs: 2, sm: 3 },
+                        mt: { xs: 7, sm: 8 }, // Account for fixed AppBar
+                        ml: { xs: 0, sm: '280px' }, // Permanent drawer only from sm+
+                        overflowX: 'hidden',
+                        boxSizing: 'border-box',
                       }}
                     >
                     <Routes>
