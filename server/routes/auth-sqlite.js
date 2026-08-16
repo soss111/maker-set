@@ -372,7 +372,7 @@ router.get('/users', authenticateToken, async (req, res) => {
       queryParams = [searchTerm, searchTerm, searchTerm, searchTerm, searchTerm];
     }
 
-    // Get users with pagination (provider_markup_percentage optional - may not exist in SQLite schema)
+    // Get users with pagination
     const query = `
       SELECT 
         user_id,
@@ -383,7 +383,9 @@ router.get('/users', authenticateToken, async (req, res) => {
         company_name,
         role,
         is_active,
-        created_at
+        created_at,
+        last_login,
+        COALESCE(provider_markup_percentage, 0) as provider_markup_percentage
       FROM users 
       ${whereClause}
       ORDER BY created_at DESC
@@ -467,10 +469,15 @@ router.put('/users/:id', authenticateToken, async (req, res) => {
       }
     }
 
+    const activeValue = (is_active === true || is_active === 1 || is_active === '1' || is_active === 'true') ? 1 : 0;
+    const markupValue = provider_markup_percentage == null || provider_markup_percentage === ''
+      ? 0
+      : Number(provider_markup_percentage);
+
     // Update user
     await db.query(
-      'UPDATE users SET first_name = ?, last_name = ?, company_name = ?, username = ?, role = ?, is_active = ?, provider_markup_percentage = ? WHERE user_id = ?',
-      [first_name, last_name, company_name, username, role, is_active, provider_markup_percentage, userId]
+      'UPDATE users SET first_name = ?, last_name = ?, company_name = ?, username = ?, role = ?, is_active = ?, provider_markup_percentage = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?',
+      [first_name, last_name, company_name || null, username, role, activeValue, markupValue, userId]
     );
 
     res.json({
@@ -479,7 +486,7 @@ router.put('/users/:id', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error updating user:', error);
-    res.status(500).json({ error: 'Failed to update user' });
+    res.status(500).json({ error: 'Failed to update user', details: error.message });
   }
 });
 

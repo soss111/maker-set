@@ -289,6 +289,55 @@ function ensureAuthTables() {
   });
 }
 
+/** Ensure users table has columns needed by admin user management. */
+function ensureUsersColumns() {
+  return new Promise((resolve, reject) => {
+    const db = connectionManager.getConnection();
+    db.all('PRAGMA table_info(users)', [], (err, rows) => {
+      if (err) {
+        // users table may not exist yet
+        resolve();
+        return;
+      }
+      const have = new Set((rows || []).map((r) => r.name));
+      const required = [
+        { name: 'provider_markup_percentage', def: 'REAL DEFAULT 0' },
+        { name: 'provider_code', def: 'TEXT' },
+        { name: 'phone', def: 'TEXT' },
+        { name: 'address', def: 'TEXT' },
+        { name: 'city', def: 'TEXT' },
+        { name: 'postal_code', def: 'TEXT' },
+        { name: 'country', def: 'TEXT' },
+        { name: 'last_login', def: 'TEXT' },
+      ];
+      const toAdd = required.filter((r) => !have.has(r.name));
+      if (toAdd.length === 0) {
+        console.log('✅ users table columns up to date');
+        resolve();
+        return;
+      }
+      let i = 0;
+      const next = () => {
+        if (i >= toAdd.length) {
+          console.log('✅ users table columns updated');
+          resolve();
+          return;
+        }
+        const col = toAdd[i++];
+        db.run(`ALTER TABLE users ADD COLUMN ${col.name} ${col.def}`, [], (alterErr) => {
+          if (alterErr && !String(alterErr.message).includes('duplicate column')) {
+            console.error(`❌ Failed adding users.${col.name}:`, alterErr.message);
+            reject(alterErr);
+            return;
+          }
+          next();
+        });
+      };
+      next();
+    });
+  });
+}
+
 /** Ensure login_codes table exists for email OTP login (idempotent). */
 function ensureLoginCodesTable() {
   return new Promise((resolve, reject) => {
@@ -475,6 +524,7 @@ async function startup() {
     await ensureToolsTable();
     await ensureToolsColumns();
     await ensureAuthTables();
+    await ensureUsersColumns();
     await ensureLoginCodesTable();
     await ensureProviderSetsColumns();
     await ensureRatingsTable();

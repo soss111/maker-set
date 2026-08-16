@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS users (
     postal_code TEXT,
     country TEXT,
     provider_code TEXT,
+    provider_markup_percentage REAL DEFAULT 0,
     is_active INTEGER DEFAULT 1,
     email_verified INTEGER DEFAULT 0,
     last_login TEXT,
