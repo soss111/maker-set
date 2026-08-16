@@ -20,8 +20,8 @@ services:
       - key: UPLOADS_DIR
         value: /app/data/uploads
       - key: CORS_ORIGIN
-        value: https://maker-set.netlify.app
-      # After first deploy, set this to https://<your-service>.onrender.com in the Render dashboard
+        value: https://www.ltcc.ee,https://ltcc.ee,https://maker-set.netlify.app
+      # Prefer https://www.ltcc.ee once Netlify /api proxy is live; otherwise the Render URL
       - key: PUBLIC_URL
         sync: false
       - key: JWT_SECRET

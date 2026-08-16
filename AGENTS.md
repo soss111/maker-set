@@ -50,12 +50,12 @@ From the repo root, `npm run dev` starts both together via `concurrently`.
 
 ### Production (Netlify + API)
 
-- Netlify hosts **only** the React client. Full production setup is documented in
-  `DEPLOY.md` (Render blueprint in `render.yaml`, Netlify `API_PROXY_TARGET` proxy).
-- Client production builds default `REACT_APP_API_URL` to `/api` (same-origin). Do not
-  leave the Netlify bundle calling `localhost:5001`.
+- Public site target: **https://www.ltcc.ee** (Netlify custom domain). See `DEPLOY.md`.
+- Netlify hosts **only** the React client. API runs on Render (`render.yaml`) and is
+  proxied via Netlify `API_PROXY_TARGET` so the browser uses `https://www.ltcc.ee/api`.
+- Client production builds default `REACT_APP_API_URL` to `/api`.
 - Server binds `0.0.0.0`, supports `DB_FILE` / `UPLOADS_DIR`, and comma-separated
-  `CORS_ORIGIN` for production.
+  `CORS_ORIGIN` (include `https://www.ltcc.ee`).
 
 ### Client dependency install caveat
 
