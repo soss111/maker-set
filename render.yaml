@@ -24,3 +24,5 @@ services:
         sync: false
       - key: JWT_SECRET
         generateValue: true
+      # Required for real 6-digit login emails (set in Render dashboard):
+      # SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, SMTP_FROM

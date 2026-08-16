@@ -40,15 +40,9 @@ const Login: React.FC = () => {
 
     try {
       const result = await requestLoginCode(email);
-      let message = result.message;
-      if (result.testMode && result.devCode) {
-        message += ` (dev code: ${result.devCode})`;
-      }
-      setInfo(message);
+      setInfo(result.message);
       setCodeStep('code');
-      if (result.devCode) {
-        setCode(result.devCode);
-      }
+      setCode('');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -206,12 +200,8 @@ const Login: React.FC = () => {
                     setLoading(true);
                     try {
                       const result = await requestLoginCode(email);
-                      let message = 'A new code was sent.';
-                      if (result.testMode && result.devCode) {
-                        message += ` (dev code: ${result.devCode})`;
-                        setCode(result.devCode);
-                      }
-                      setInfo(message);
+                      setInfo(result.message || 'A new code was sent to your email.');
+                      setCode('');
                     } catch (err: any) {
                       setError(err.message);
                     } finally {

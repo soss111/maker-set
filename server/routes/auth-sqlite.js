@@ -215,11 +215,22 @@ router.post('/request-code', async (req, res) => {
       return res.status(500).json({ error: 'Failed to send login code. Please try again.' });
     }
 
+    // In production, never expose the code in the API response — email only.
+    // Local/dev can opt in with ALLOW_TEST_LOGIN_CODES=true when SMTP is unset.
     const response = { ...genericResponse };
-    // Help local/cloud testing when SMTP is not configured
-    if (sendResult.testMode) {
+    const allowDevCode =
+      sendResult.testMode &&
+      process.env.ALLOW_TEST_LOGIN_CODES === 'true' &&
+      process.env.NODE_ENV !== 'production';
+
+    if (allowDevCode) {
       response.dev_code = code;
       response.test_mode = true;
+    } else if (sendResult.testMode && process.env.NODE_ENV === 'production') {
+      console.error('📧 Login code requested but SMTP is not configured (test mode). Set SMTP_USER and SMTP_PASS.');
+      return res.status(503).json({
+        error: 'Email delivery is not configured on the server. Please contact the administrator.'
+      });
     }
 
     res.json(response);
