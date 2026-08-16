@@ -289,6 +289,32 @@ function ensureAuthTables() {
   });
 }
 
+/** Ensure login_codes table exists for email OTP login (idempotent). */
+function ensureLoginCodesTable() {
+  return new Promise((resolve, reject) => {
+    const db = connectionManager.getConnection();
+    const sql = `CREATE TABLE IF NOT EXISTS login_codes (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      expires_at TEXT NOT NULL,
+      attempts INTEGER DEFAULT 0,
+      used INTEGER DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
+    CREATE INDEX IF NOT EXISTS idx_login_codes_email ON login_codes(email);`;
+    db.exec(sql, (err) => {
+      if (err) {
+        console.error('❌ login_codes table create failed:', err.message);
+        reject(err);
+      } else {
+        console.log('✅ login_codes table ensured');
+        resolve();
+      }
+    });
+  });
+}
+
 /** Create ratings table if missing (for shop-sets subqueries). */
 function ensureRatingsTable() {
   return new Promise((resolve, reject) => {
@@ -449,6 +475,7 @@ async function startup() {
     await ensureToolsTable();
     await ensureToolsColumns();
     await ensureAuthTables();
+    await ensureLoginCodesTable();
     await ensureProviderSetsColumns();
     await ensureRatingsTable();
     await ensureFavoritesTable();

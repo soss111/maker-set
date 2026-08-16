@@ -2,9 +2,41 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('../utils/sqliteConnectionManager');
+const emailService = require('../services/emailService');
 const { authenticateToken, requireAdmin, requireAdminOrSelf } = require('../middleware/auth');
 
 const router = express.Router();
+
+const CODE_TTL_MS = 10 * 60 * 1000;
+const MAX_CODE_ATTEMPTS = 5;
+
+function issueAuthToken(user) {
+  return jwt.sign(
+    {
+      userId: user.user_id,
+      email: user.email,
+      username: user.username,
+      role: user.role,
+      first_name: user.first_name,
+      last_name: user.last_name,
+      company_name: user.company_name
+    },
+    process.env.JWT_SECRET || 'your-super-secret-jwt-key-here',
+    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+  );
+}
+
+function authUserPayload(user) {
+  return {
+    id: user.user_id,
+    email: user.email,
+    username: user.username,
+    first_name: user.first_name,
+    last_name: user.last_name,
+    company_name: user.company_name,
+    role: user.role
+  };
+}
 
 // Register new user
 router.post('/register', async (req, res) => {
@@ -101,7 +133,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// Login user
+// Login user (password)
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -125,37 +157,148 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
 
-    // Generate JWT token
-    const token = jwt.sign(
-      { 
-        userId: user.user_id, 
-        email: user.email, 
-        username: user.username, 
-        role: user.role,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        company_name: user.company_name
-      },
-      process.env.JWT_SECRET || 'your-super-secret-jwt-key-here',
-      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
-    );
+    const token = issueAuthToken(user);
 
     res.json({
       message: 'Login successful',
       token,
-      user: {
-        id: user.user_id,
-        email: user.email,
-        username: user.username,
-        first_name: user.first_name,
-        last_name: user.last_name,
-        company_name: user.company_name,
-        role: user.role
-      }
+      user: authUserPayload(user)
     });
 
   } catch (error) {
     console.error('Login error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Request a 6-digit email login code
+router.post('/request-code', async (req, res) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const userResult = await db.query(
+      'SELECT user_id, email, is_active FROM users WHERE lower(email) = ?',
+      [email]
+    );
+    const user = userResult.rows[0];
+
+    // Always return a generic success message to avoid email enumeration.
+    const genericResponse = {
+      success: true,
+      message: 'If an account exists for this email, a 6-digit code has been sent.'
+    };
+
+    if (!user || user.is_active === 0) {
+      return res.json(genericResponse);
+    }
+
+    const code = String(Math.floor(100000 + Math.random() * 900000));
+    const codeHash = await bcrypt.hash(code, 10);
+    const expiresAt = new Date(Date.now() + CODE_TTL_MS).toISOString();
+
+    // Invalidate previous unused codes for this email
+    await db.run(
+      'UPDATE login_codes SET used = 1 WHERE lower(email) = ? AND used = 0',
+      [email]
+    );
+
+    await db.run(
+      'INSERT INTO login_codes (email, code_hash, expires_at) VALUES (?, ?, ?)',
+      [email, codeHash, expiresAt]
+    );
+
+    const sendResult = await emailService.sendLoginCode(email, code);
+    if (!sendResult.success) {
+      return res.status(500).json({ error: 'Failed to send login code. Please try again.' });
+    }
+
+    const response = { ...genericResponse };
+    // Help local/cloud testing when SMTP is not configured
+    if (sendResult.testMode) {
+      response.dev_code = code;
+      response.test_mode = true;
+    }
+
+    res.json(response);
+  } catch (error) {
+    console.error('Request-code error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Verify a 6-digit email login code
+router.post('/verify-code', async (req, res) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const code = String(req.body.code || '').trim();
+
+    if (!email || !code) {
+      return res.status(400).json({ error: 'Email and code are required' });
+    }
+
+    if (!/^\d{6}$/.test(code)) {
+      return res.status(400).json({ error: 'Code must be 6 digits' });
+    }
+
+    const codeResult = await db.query(
+      `SELECT * FROM login_codes
+       WHERE lower(email) = ? AND used = 0
+       ORDER BY id DESC
+       LIMIT 1`,
+      [email]
+    );
+    const record = codeResult.rows[0];
+
+    if (!record) {
+      return res.status(401).json({ error: 'Invalid or expired code' });
+    }
+
+    if (new Date(record.expires_at).getTime() < Date.now()) {
+      await db.run('UPDATE login_codes SET used = 1 WHERE id = ?', [record.id]);
+      return res.status(401).json({ error: 'Invalid or expired code' });
+    }
+
+    if ((record.attempts || 0) >= MAX_CODE_ATTEMPTS) {
+      await db.run('UPDATE login_codes SET used = 1 WHERE id = ?', [record.id]);
+      return res.status(401).json({ error: 'Too many attempts. Please request a new code.' });
+    }
+
+    const matches = await bcrypt.compare(code, record.code_hash);
+    if (!matches) {
+      await db.run(
+        'UPDATE login_codes SET attempts = attempts + 1 WHERE id = ?',
+        [record.id]
+      );
+      return res.status(401).json({ error: 'Invalid or expired code' });
+    }
+
+    await db.run('UPDATE login_codes SET used = 1 WHERE id = ?', [record.id]);
+
+    const userResult = await db.query(
+      'SELECT * FROM users WHERE lower(email) = ?',
+      [email]
+    );
+    const user = userResult.rows[0];
+    if (!user || user.is_active === 0) {
+      return res.status(401).json({ error: 'Invalid or expired code' });
+    }
+
+    await db.run(
+      "UPDATE users SET last_login = datetime('now') WHERE user_id = ?",
+      [user.user_id]
+    );
+
+    const token = issueAuthToken(user);
+    res.json({
+      message: 'Login successful',
+      token,
+      user: authUserPayload(user)
+    });
+  } catch (error) {
+    console.error('Verify-code error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

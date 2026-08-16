@@ -188,6 +188,39 @@ Thank you for your order!
     `.trim();
   }
 
+  async sendLoginCode(email, code) {
+    try {
+      const mailOptions = {
+        from: process.env.SMTP_FROM || 'noreply@makerset.com',
+        to: email,
+        subject: 'Your MakerSet login code',
+        text: `Your MakerSet login code is ${code}. It expires in 10 minutes.`,
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 480px; margin: 0 auto;">
+            <h2>Your login code</h2>
+            <p>Use this 6-digit code to sign in to MakerSet:</p>
+            <p style="font-size: 32px; letter-spacing: 8px; font-weight: bold;">${code}</p>
+            <p style="color: #666;">This code expires in 10 minutes. If you did not request it, you can ignore this email.</p>
+          </div>
+        `
+      };
+
+      if (this.isTestMode) {
+        console.log('📧 TEST MODE - Login code email would be sent:');
+        console.log('📧 To:', email);
+        console.log('📧 Code:', code);
+        return { success: true, message: 'Email logged (test mode)', testMode: true };
+      }
+
+      const result = await this.transporter.sendMail(mailOptions);
+      console.log('📧 Login code email sent successfully:', result.messageId);
+      return { success: true, messageId: result.messageId, testMode: false };
+    } catch (error) {
+      console.error('📧 Error sending login code email:', error);
+      return { success: false, error: error.message, testMode: this.isTestMode };
+    }
+  }
+
   async testConnection() {
     try {
       if (this.isTestMode) {

@@ -855,6 +855,17 @@ export const adminProviderSetsApi = {
 export const authApi = {
   login: (email: string, password: string) =>
     api.post<AuthResponse>('/auth/login', { email, password }),
+
+  requestLoginCode: (email: string) =>
+    api.post<{
+      success: boolean;
+      message: string;
+      test_mode?: boolean;
+      dev_code?: string;
+    }>('/auth/request-code', { email }),
+
+  verifyLoginCode: (email: string, code: string) =>
+    api.post<AuthResponse>('/auth/verify-code', { email, code }),
   
   register: (userData: {
     email: string;

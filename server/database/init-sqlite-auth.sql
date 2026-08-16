@@ -92,6 +92,18 @@ CREATE TABLE IF NOT EXISTS system_settings (
 INSERT OR IGNORE INTO users (username, email, password_hash, role, first_name, last_name, is_active, email_verified)
 VALUES ('admin', 'admin@makerset.com', '$2a$10$Ws.9lQqiwnmzqZpn6Nj1gOmqInsmOrb9DBCEO3gqOovPjicIAn.QG', 'admin', 'System', 'Administrator', 1, 1);
 
+-- One-time 6-digit email login codes
+CREATE TABLE IF NOT EXISTS login_codes (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    email TEXT NOT NULL,
+    code_hash TEXT NOT NULL,
+    expires_at TEXT NOT NULL,
+    attempts INTEGER DEFAULT 0,
+    used INTEGER DEFAULT 0,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+CREATE INDEX IF NOT EXISTS idx_login_codes_email ON login_codes(email);
+
 -- Shipping/settings expected by CartContext and others
 INSERT OR IGNORE INTO system_settings (setting_key, setting_value, setting_type, category) VALUES
 ('shipping_handling_cost', '15', 'number', 'general'),

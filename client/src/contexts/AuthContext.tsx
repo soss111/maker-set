@@ -24,6 +24,8 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   login: (email: string, password: string) => Promise<void>;
+  requestLoginCode: (email: string) => Promise<{ message: string; testMode?: boolean; devCode?: string }>;
+  loginWithCode: (email: string, code: string) => Promise<void>;
   register: (userData: RegisterData) => Promise<void>;
   logout: () => void;
   updateProfile: (userData: Partial<User>) => Promise<void>;
@@ -119,6 +121,43 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const requestLoginCode = async (email: string) => {
+    try {
+      const response = await authApi.requestLoginCode(email);
+      return {
+        message: response.data.message,
+        testMode: response.data.test_mode,
+        devCode: response.data.dev_code,
+      };
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Failed to send login code');
+    }
+  };
+
+  const loginWithCode = async (email: string, code: string) => {
+    try {
+      const response = await authApi.verifyLoginCode(email, code);
+      const { user: userData, token: authToken } = response.data;
+
+      const mappedUser: User = {
+        user_id: userData.id,
+        email: userData.email,
+        username: userData.username,
+        first_name: userData.first_name,
+        last_name: userData.last_name,
+        company_name: userData.company_name,
+        role: userData.role as 'admin' | 'customer' | 'provider' | 'production',
+        created_at: new Date().toISOString(),
+      };
+
+      setUser(mappedUser);
+      setToken(authToken);
+      localStorage.setItem('authToken', authToken);
+    } catch (error: any) {
+      throw new Error(error.response?.data?.error || 'Code verification failed');
+    }
+  };
+
   const register = async (userData: RegisterData) => {
     try {
       const response = await authApi.register(userData);
@@ -186,6 +225,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     token,
     login,
+    requestLoginCode,
+    loginWithCode,
     register,
     logout,
     updateProfile,

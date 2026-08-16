@@ -37,6 +37,17 @@ From the repo root, `npm run dev` starts both together via `concurrently`.
   translation fallback (LibreTranslate is primary, then static fallback), and email
   (`SMTP_*`) runs in log-only "test mode" when unset.
 
+### Email 6-digit login
+
+- Primary login UI is email → 6-digit code (`POST /api/auth/request-code`,
+  `POST /api/auth/verify-code`). Password login remains available as a fallback on the
+  same page.
+- Codes expire in 10 minutes and are stored hashed in `login_codes`.
+- Without `SMTP_USER`/`SMTP_PASS`, emails are not sent; the API returns `test_mode: true`
+  and `dev_code` so local/cloud agents can complete the flow. With SMTP configured, only
+  the email is sent (no `dev_code` in the response).
+- Seeded admin for testing: `admin@makerset.com` / `admin123` (password fallback).
+
 ### Client dependency install caveat
 
 - The client **must** be installed with `npm install --legacy-peer-deps`. Plain
