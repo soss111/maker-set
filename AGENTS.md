@@ -51,8 +51,13 @@ From the repo root, `npm run dev` starts both together via `concurrently`.
 ### Production (Netlify + API)
 
 - Public site target: **https://www.ltcc.ee** (Netlify custom domain). See `DEPLOY.md`.
+- **DNS gotcha (2026-08):** `www.ltcc.ee` / `ltcc.ee` still resolve to **Zone**
+  (`Apache / ZoneOS`, NS `ns.zone.eu` / `ns2.zone.ee`). That host returns **404** for
+  `/login` and `/api/*`. Working frontend today: **https://maker-set.netlify.app**
+  (API proxy to Render works there). Until Zone DNS points to Netlify (CNAME `www` →
+  `maker-set.netlify.app`, plus domain added in Netlify), do not expect `ltcc.ee` to serve MakerSet.
 - Netlify hosts **only** the React client. API runs on Render (`render.yaml`) and is
-  proxied via Netlify `API_PROXY_TARGET` so the browser uses `https://www.ltcc.ee/api`.
+  proxied via Netlify `API_PROXY_TARGET` so the browser uses same-origin `/api`.
 - Client production builds default `REACT_APP_API_URL` to `/api`.
 - Server binds `0.0.0.0`, supports `DB_FILE` / `UPLOADS_DIR`, and comma-separated
   `CORS_ORIGIN` (include `https://www.ltcc.ee`).
