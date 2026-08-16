@@ -64,6 +64,23 @@ interface Set {
   price?: number;
   available_quantity?: number;
   is_active?: boolean;
+  set_name?: string;
+  set_description?: string;
+}
+
+/** Normalize provider-sets API rows (set_name) into the Set shape the UI expects. */
+function mapProviderSetRow(row: any): Set {
+  return {
+    ...row,
+    name: row.name || row.set_name || `Set ${row.set_id}`,
+    description: row.description || row.set_description || '',
+    category: row.category || 'uncategorized',
+    difficulty_level: row.difficulty_level || 'beginner',
+    active: row.set_active !== 0 && row.set_active !== false,
+    is_active: row.is_active === 1 || row.is_active === true,
+    price: row.price ?? row.base_price ?? 0,
+    available_quantity: row.available_quantity ?? 0,
+  };
 }
 
 const ProviderSetManagement: React.FC = () => {
@@ -81,9 +98,12 @@ const ProviderSetManagement: React.FC = () => {
   const [editingValue, setEditingValue] = useState<string>('');
 
   useEffect(() => {
+    if (!user?.user_id) {
+      return;
+    }
     fetchData();
     fetchUserProfile();
-  }, []);
+  }, [user?.user_id]);
 
   // Calculate commission after userProfile is loaded
   const providerMarkupPercentage = userProfile?.provider_markup_percentage ?? user?.provider_markup_percentage ?? 50;
@@ -127,15 +147,17 @@ const ProviderSetManagement: React.FC = () => {
       
       if (!user?.user_id) {
         setError('User not authenticated');
+        setSets([]);
         return;
       }
       
       const response = await providerApi.getProviderSets(user.user_id, true);
-      const providerSets = response.data?.provider_sets || [];
+      const providerSets = (response.data?.provider_sets || []).map(mapProviderSetRow);
       setSets(providerSets);
     } catch (err: any) {
       console.error('Error fetching sets:', err);
       setError(err.response?.data?.error || err.message || 'Failed to fetch sets');
+      setSets([]);
     } finally {
       setLoading(false);
     }
@@ -213,7 +235,13 @@ const ProviderSetManagement: React.FC = () => {
     if (!window.confirm('Are you sure you want to delete this set?')) return;
 
     try {
-      await providerApi.deleteProviderSet(setId);
+      const row = sets.find((s) => s.set_id === setId);
+      const providerSetId = row?.provider_set_id;
+      if (!providerSetId) {
+        setError('Provider set ID not found');
+        return;
+      }
+      await providerApi.deleteProviderSet(providerSetId);
       setSuccess('Set deleted successfully!');
       await fetchData();
       setTimeout(() => setSuccess(null), 3000);
