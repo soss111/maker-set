@@ -39,15 +39,14 @@ From the repo root, `npm run dev` starts both together via `concurrently`.
 
 ### Email 6-digit login
 
-- Primary login UI is email → 6-digit code (`POST /api/auth/request-code`,
-  `POST /api/auth/verify-code`). Password login remains available as a fallback on the
-  same page.
+- Primary login UI defaults to **password** when email SMTP may be unavailable; 6-digit
+  code remains available via “Use 6-digit email code instead”.
+- Codes: `POST /api/auth/request-code`, `POST /api/auth/verify-code`. Password:
+  `POST /api/auth/login`.
 - Codes expire in 10 minutes and are stored hashed in `login_codes`.
-- Without `SMTP_USER`/`SMTP_PASS`, the API runs in email test mode. In **production**
-  it will **not** return `dev_code` in the browser; configure SMTP on Render so codes
-  are emailed. Locally you can set `ALLOW_TEST_LOGIN_CODES=true` to get `dev_code` in
-  API responses when SMTP is unset.
-- Seeded admin for testing: `admin@makerset.com` / `admin123` (password fallback).
+- Without working `SMTP_USER`/`SMTP_PASS` on Render, code login returns **503** and the
+  UI switches to password. Set SMTP in the Render dashboard for real email codes.
+- Seeded admin for testing: `admin@makerset.com` / `admin123` (password).
 
 ### Production (Netlify + API)
 

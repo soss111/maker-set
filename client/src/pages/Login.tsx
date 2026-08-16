@@ -17,7 +17,8 @@ type LoginMode = 'code' | 'password';
 type CodeStep = 'email' | 'code';
 
 const Login: React.FC = () => {
-  const [mode, setMode] = useState<LoginMode>('code');
+  // Default to password while production SMTP is often unset; code login remains available.
+  const [mode, setMode] = useState<LoginMode>('password');
   const [codeStep, setCodeStep] = useState<CodeStep>('email');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,6 +34,14 @@ const Login: React.FC = () => {
     setInfo('');
   };
 
+  const switchToPassword = (message?: string) => {
+    setMode('password');
+    setCodeStep('email');
+    if (message) {
+      setError(message);
+    }
+  };
+
   const handleRequestCode = async (e: React.FormEvent) => {
     e.preventDefault();
     resetMessages();
@@ -44,7 +53,13 @@ const Login: React.FC = () => {
       setCodeStep('code');
       setCode('');
     } catch (err: any) {
-      setError(err.message);
+      const msg = err.message || 'Failed to send login code.';
+      // SMTP missing/broken → guide user to password login immediately
+      if (/smtp|email login is unavailable|not configured|password/i.test(msg)) {
+        switchToPassword(msg);
+      } else {
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -138,10 +153,18 @@ const Login: React.FC = () => {
                   type="submit"
                   fullWidth
                   variant="contained"
-                  sx={{ mt: 3, mb: 2 }}
+                  sx={{ mt: 3, mb: 1 }}
                   disabled={loading}
                 >
                   {loading ? 'Sending code...' : 'Send 6-digit code'}
+                </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  disabled={loading}
+                  onClick={() => switchToPassword()}
+                >
+                  Use password instead
                 </Button>
               </Box>
             )}
@@ -203,13 +226,27 @@ const Login: React.FC = () => {
                       setInfo(result.message || 'A new code was sent to your email.');
                       setCode('');
                     } catch (err: any) {
-                      setError(err.message);
+                      const msg = err.message || 'Failed to send login code.';
+                      if (/smtp|email login is unavailable|not configured|password/i.test(msg)) {
+                        switchToPassword(msg);
+                      } else {
+                        setError(msg);
+                      }
                     } finally {
                       setLoading(false);
                     }
                   }}
                 >
                   Resend code
+                </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  sx={{ mt: 1 }}
+                  disabled={loading}
+                  onClick={() => switchToPassword()}
+                >
+                  Use password instead
                 </Button>
               </Box>
             )}
@@ -246,44 +283,27 @@ const Login: React.FC = () => {
                   type="submit"
                   fullWidth
                   variant="contained"
-                  sx={{ mt: 3, mb: 2 }}
+                  sx={{ mt: 3, mb: 1 }}
                   disabled={loading}
                 >
                   {loading ? 'Signing In...' : 'Sign In'}
                 </Button>
+                <Button
+                  fullWidth
+                  variant="text"
+                  disabled={loading}
+                  onClick={() => {
+                    setMode('code');
+                    setCodeStep('email');
+                    resetMessages();
+                  }}
+                >
+                  Use 6-digit email code instead
+                </Button>
               </Box>
             )}
 
-            <Box sx={{ textAlign: 'center', width: '100%' }}>
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                {mode === 'code' ? (
-                  <Link
-                    component="button"
-                    type="button"
-                    variant="body2"
-                    onClick={() => {
-                      setMode('password');
-                      setCodeStep('email');
-                      resetMessages();
-                    }}
-                  >
-                    Use password instead
-                  </Link>
-                ) : (
-                  <Link
-                    component="button"
-                    type="button"
-                    variant="body2"
-                    onClick={() => {
-                      setMode('code');
-                      setCodeStep('email');
-                      resetMessages();
-                    }}
-                  >
-                    Use 6-digit email code instead
-                  </Link>
-                )}
-              </Typography>
+            <Box sx={{ textAlign: 'center', width: '100%', mt: 2 }}>
               <Typography variant="body2">
                 Don't have an account?{' '}
                 <Link component={RouterLink} to="/register" variant="body2">

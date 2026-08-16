@@ -213,8 +213,17 @@ router.post('/request-code', async (req, res) => {
     );
 
     const sendResult = await emailService.sendLoginCode(email, code);
-    if (!sendResult.success) {
-      return res.status(500).json({ error: 'Failed to send login code. Please try again.' });
+    if (!sendResult.success || (sendResult.testMode && process.env.NODE_ENV === 'production')) {
+      console.error('📧 Login code email not delivered:', {
+        success: sendResult.success,
+        testMode: sendResult.testMode,
+        error: sendResult.error,
+      });
+      return res.status(503).json({
+        error:
+          'Email login is unavailable (SMTP not configured). Please sign in with your password, or ask an admin to set SMTP_USER/SMTP_PASS on the API.',
+        password_login_available: true,
+      });
     }
 
     // In production, never expose the code in the API response — email only.
@@ -228,11 +237,6 @@ router.post('/request-code', async (req, res) => {
     if (allowDevCode) {
       response.dev_code = code;
       response.test_mode = true;
-    } else if (sendResult.testMode && process.env.NODE_ENV === 'production') {
-      console.error('📧 Login code requested but SMTP is not configured (test mode). Set SMTP_USER and SMTP_PASS.');
-      return res.status(503).json({
-        error: 'Email delivery is not configured on the server. Please contact the administrator.'
-      });
     }
 
     res.json(response);
