@@ -58,6 +58,23 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
+const mapAuthUser = (userData: any): User => ({
+  user_id: userData.id ?? userData.user_id,
+  email: userData.email,
+  username: userData.username,
+  first_name: userData.first_name,
+  last_name: userData.last_name,
+  company_name: userData.company_name,
+  role: userData.role as 'admin' | 'customer' | 'provider' | 'production',
+  created_at: userData.created_at || new Date().toISOString(),
+  last_login: userData.last_login,
+  provider_markup_percentage:
+    userData.provider_markup_percentage !== undefined && userData.provider_markup_percentage !== null
+      ? Number(userData.provider_markup_percentage)
+      : undefined,
+  provider_code: userData.provider_code,
+});
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -80,7 +97,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           if (response.ok) {
             const data = await response.json();
             // Backend returns user data wrapped in a 'user' property
-            setUser(data.user);
+            setUser(mapAuthUser(data.user));
           } else {
             throw new Error('Failed to fetch profile');
           }
@@ -101,19 +118,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authApi.login(email, password);
       const { user: userData, token: authToken } = response.data;
       
-      // Map auth response user to User interface
-      const mappedUser: User = {
-        user_id: userData.id,
-        email: userData.email,
-        username: userData.username,
-        first_name: userData.first_name,
-        last_name: userData.last_name,
-        company_name: userData.company_name,
-        role: userData.role as 'admin' | 'customer' | 'provider' | 'production',
-        created_at: new Date().toISOString(), // Default value since not provided by auth
-      };
-      
-      setUser(mappedUser);
+      setUser(mapAuthUser(userData));
       setToken(authToken);
       localStorage.setItem('authToken', authToken);
     } catch (error: any) {
@@ -139,18 +144,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authApi.verifyLoginCode(email, code);
       const { user: userData, token: authToken } = response.data;
 
-      const mappedUser: User = {
-        user_id: userData.id,
-        email: userData.email,
-        username: userData.username,
-        first_name: userData.first_name,
-        last_name: userData.last_name,
-        company_name: userData.company_name,
-        role: userData.role as 'admin' | 'customer' | 'provider' | 'production',
-        created_at: new Date().toISOString(),
-      };
-
-      setUser(mappedUser);
+      setUser(mapAuthUser(userData));
       setToken(authToken);
       localStorage.setItem('authToken', authToken);
     } catch (error: any) {
@@ -163,19 +157,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await authApi.register(userData);
       const { user: newUser, token: authToken } = response.data;
       
-      // Map auth response user to User interface
-      const mappedUser: User = {
-        user_id: newUser.id,
-        email: newUser.email,
-        username: newUser.username,
-        first_name: newUser.first_name,
-        last_name: newUser.last_name,
-        company_name: newUser.company_name,
-        role: newUser.role as 'admin' | 'customer' | 'provider' | 'production',
-        created_at: new Date().toISOString(), // Default value since not provided by auth
-      };
-      
-      setUser(mappedUser);
+      setUser(mapAuthUser(newUser));
       setToken(authToken);
       localStorage.setItem('authToken', authToken);
     } catch (error: any) {

@@ -35,7 +35,9 @@ function authUserPayload(user) {
     first_name: user.first_name,
     last_name: user.last_name,
     company_name: user.company_name,
-    role: user.role
+    role: user.role,
+    provider_markup_percentage: Number(user.provider_markup_percentage ?? 0),
+    provider_code: user.provider_code || null
   };
 }
 
@@ -323,7 +325,10 @@ router.post('/verify-code', async (req, res) => {
 // Get current user profile
 router.get('/profile', authenticateToken, async (req, res) => {
   try {
-    const result = await db.query('SELECT user_id, email, username, first_name, last_name, company_name, role FROM users WHERE user_id = ?', [req.user.userId]);
+    const result = await db.query(
+      'SELECT user_id, email, username, first_name, last_name, company_name, role, COALESCE(provider_markup_percentage, 0) as provider_markup_percentage, provider_code FROM users WHERE user_id = ?',
+      [req.user.userId]
+    );
     const user = result.rows[0];
 
     if (!user) {
@@ -445,7 +450,7 @@ router.get('/users/:id', authenticateToken, async (req, res) => {
 
     const userId = req.params.id;
     const result = await db.query(
-      'SELECT user_id, email, username, first_name, last_name, company_name, role, is_active, created_at FROM users WHERE user_id = ?',
+      'SELECT user_id, email, username, first_name, last_name, company_name, role, is_active, created_at, COALESCE(provider_markup_percentage, 0) as provider_markup_percentage, provider_code FROM users WHERE user_id = ?',
       [userId]
     );
 

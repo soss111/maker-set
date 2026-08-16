@@ -44,6 +44,10 @@ import { useAuth } from '../contexts/AuthContext';
 import { apiUrl, authApi, mediaApi, providerApi, setPartsApi, setsApi } from '../services/api';
 import ProviderSetCreationWizard from './ProviderSetCreationWizard';
 import ProviderPaymentStats from './ProviderPaymentStats';
+import {
+  resolveProviderMarkupPercentage,
+  resolveSystemCommissionPercentage,
+} from '../utils/providerMarkup';
 
 interface Set {
   set_id: number;
@@ -105,9 +109,9 @@ const ProviderSetManagement: React.FC = () => {
     fetchUserProfile();
   }, [user?.user_id]);
 
-  // Calculate commission after userProfile is loaded
-  const providerMarkupPercentage = userProfile?.provider_markup_percentage ?? user?.provider_markup_percentage ?? 50;
-  const systemCommissionPercentage = 100 - providerMarkupPercentage;
+  // Calculate commission after userProfile is loaded (0% is valid; do not treat as missing)
+  const providerMarkupPercentage = resolveProviderMarkupPercentage(userProfile, user);
+  const systemCommissionPercentage = resolveSystemCommissionPercentage(userProfile, user);
   
   // Debug logging
   useEffect(() => {

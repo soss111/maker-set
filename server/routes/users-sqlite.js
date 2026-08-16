@@ -16,7 +16,9 @@ router.get('/profile', authenticateToken, async (req, res) => {
         company_name,
         role,
         created_at,
-        updated_at
+        updated_at,
+        COALESCE(provider_markup_percentage, 0) as provider_markup_percentage,
+        provider_code
       FROM users
       WHERE user_id = ?
     `;
@@ -66,7 +68,9 @@ router.get('/', async (req, res) => {
         company_name,
         role,
         created_at,
-        updated_at
+        updated_at,
+        COALESCE(provider_markup_percentage, 0) as provider_markup_percentage,
+        provider_code
       FROM users
       ${whereClause}
       ORDER BY ${sort_by} ${sort_order}
@@ -184,7 +188,9 @@ router.get('/:id', async (req, res) => {
         company_name,
         role,
         created_at,
-        updated_at
+        updated_at,
+        COALESCE(provider_markup_percentage, 0) as provider_markup_percentage,
+        provider_code
       FROM users
       WHERE user_id = ?
     `;
@@ -212,16 +218,43 @@ router.put('/:id', async (req, res) => {
       last_name,
       company_name,
       username,
-      role
+      role,
+      is_active,
+      provider_markup_percentage
     } = req.body;
+
+    const activeValue = is_active === undefined
+      ? null
+      : ((is_active === true || is_active === 1 || is_active === '1' || is_active === 'true') ? 1 : 0);
+    const markupValue = provider_markup_percentage === undefined
+      ? null
+      : (provider_markup_percentage == null || provider_markup_percentage === ''
+        ? 0
+        : Number(provider_markup_percentage));
 
     const query = `
       UPDATE users 
-      SET first_name = ?, last_name = ?, company_name = ?, username = ?, role = ?, updated_at = CURRENT_TIMESTAMP
+      SET first_name = COALESCE(?, first_name),
+          last_name = COALESCE(?, last_name),
+          company_name = COALESCE(?, company_name),
+          username = COALESCE(?, username),
+          role = COALESCE(?, role),
+          is_active = COALESCE(?, is_active),
+          provider_markup_percentage = COALESCE(?, provider_markup_percentage),
+          updated_at = CURRENT_TIMESTAMP
       WHERE user_id = ?
     `;
 
-    await db.query(query, [first_name, last_name, company_name, username, role, id]);
+    await db.run(query, [
+      first_name ?? null,
+      last_name ?? null,
+      company_name ?? null,
+      username ?? null,
+      role ?? null,
+      activeValue,
+      markupValue,
+      id
+    ]);
 
     res.json({ message: 'User updated successfully' });
 

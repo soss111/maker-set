@@ -43,6 +43,10 @@ import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { setsApi, partsApi, providerApi, mediaApi } from '../services/api';
 import AILearningOutcomeGenerator from './AILearningOutcomeGenerator';
+import {
+  resolveProviderMarkupPercentage,
+  resolveSystemCommissionPercentage,
+} from '../utils/providerMarkup';
 
 interface ProviderSetFormData {
   name: string;
@@ -240,9 +244,7 @@ const ProviderSetCreationWizard: React.FC<ProviderSetCreationWizardProps> = ({
         }, 2000);
       } else {
         // Creating new set
-        // Calculate system commission percentage
-        const systemCommissionPercentage = user?.provider_markup_percentage ? 
-          100 - user.provider_markup_percentage : 50;
+        const systemCommissionPercentage = resolveSystemCommissionPercentage(user);
 
         // Create the set (omit hard-coded commission part_id — server seeds SYS-COMM;
         // missing part ids must not block set creation)
@@ -676,12 +678,12 @@ const ProviderSetCreationWizard: React.FC<ProviderSetCreationWizardProps> = ({
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                       <Chip 
-                        label={`Your markup: ${user?.provider_markup_percentage || 50}%`}
+                        label={`Your markup: ${resolveProviderMarkupPercentage(user)}%`}
                         color="success"
                         size="small"
                       />
                       <Chip 
-                        label={`System commission: ${user?.provider_markup_percentage ? 100 - user.provider_markup_percentage : 50}%`}
+                        label={`System commission: ${resolveSystemCommissionPercentage(user)}%`}
                         color="warning"
                         size="small"
                       />

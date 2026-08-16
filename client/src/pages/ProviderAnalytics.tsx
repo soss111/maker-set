@@ -36,6 +36,7 @@ import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { setsApi, ordersApi, providerApi, Order, OrderItem } from '../services/api';
+import { resolveProviderMarkupPercentage } from '../utils/providerMarkup';
 
 interface ProviderAnalytics {
   totalRevenue: number;
@@ -238,15 +239,15 @@ const ProviderAnalyticsPage: React.FC = () => {
       monthlyTrends,
       customerFeedback,
       // Provider earnings and commission details
-      providerMarkupPercentage: user?.provider_markup_percentage || 0,
-      totalEarnings: Math.round(totalRevenue * (user?.provider_markup_percentage || 0) / 100 * 100) / 100,
-      totalCommission: Math.round(totalRevenue * (100 - (user?.provider_markup_percentage || 0)) / 100 * 100) / 100,
+      providerMarkupPercentage: resolveProviderMarkupPercentage(user),
+      totalEarnings: Math.round(totalRevenue * resolveProviderMarkupPercentage(user) / 100 * 100) / 100,
+      totalCommission: Math.round(totalRevenue * (100 - resolveProviderMarkupPercentage(user)) / 100 * 100) / 100,
       earningsBySet: topPerformingSets.map(set => ({
         set_id: set.set_id,
         name: set.name,
         totalRevenue: set.revenue,
-        providerEarnings: Math.round(set.revenue * (user?.provider_markup_percentage || 0) / 100 * 100) / 100,
-        commission: Math.round(set.revenue * (100 - (user?.provider_markup_percentage || 0)) / 100 * 100) / 100,
+        providerEarnings: Math.round(set.revenue * resolveProviderMarkupPercentage(user) / 100 * 100) / 100,
+        commission: Math.round(set.revenue * (100 - resolveProviderMarkupPercentage(user)) / 100 * 100) / 100,
         sales: set.sales
       }))
     };
