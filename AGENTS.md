@@ -60,8 +60,11 @@ From the repo root, `npm run dev` starts both together via `concurrently`.
   `req.user.user_id ?? req.user.userId` in new route code.
 - Provider set create: `POST /api/sets` then `POST /api/provider-sets`. Missing
   commission `part_id`s are skipped (do not hard-fail the set create).
-- Provider “My Sets” list: `ProviderSetManagement` must wait for `user.user_id` before
-  fetching; API rows use `set_name` (mapped to `name` in the client).
+- Provider markup (`users.provider_markup_percentage`): admin sets it in User
+  Management. It must appear on login, `/users/profile`, and provider UI
+  (set management / wizard / analytics). Client helper:
+  `client/src/utils/providerMarkup.ts`. Default when unset is **50%** provider
+  keep / **50%** system commission. `0` is a valid configured value.
 - After API fixes, **redeploy Render** so Netlify previews talking to
   `makerset-api.onrender.com` pick up the change (frontend-only Netlify redeploys are not enough).
 - **Render free tier has no persistent disk** — each redeploy resets SQLite. Provider
