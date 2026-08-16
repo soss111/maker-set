@@ -21,15 +21,23 @@ const UPLOADS_DIR = process.env.UPLOADS_DIR
 app.set('baseUrl', PUBLIC_URL);
 app.set('uploadsDir', UPLOADS_DIR);
 
-function resolveCorsOrigin(origin, callback) {
-  if (process.env.NODE_ENV !== 'production') {
-    return callback(null, true);
-  }
+function isAllowedCorsOrigin(origin) {
+  if (!origin) return true;
   const allowed = String(CORS_ORIGIN)
     .split(',')
     .map((o) => o.trim())
     .filter(Boolean);
-  if (!origin || allowed.includes(origin) || allowed.includes('*')) {
+  if (allowed.includes('*') || allowed.includes(origin)) return true;
+  // Netlify production site + deploy previews (e.g. https://abc123--maker-set.netlify.app)
+  if (/^https:\/\/([a-z0-9-]+--)?[a-z0-9-]+\.netlify\.app$/i.test(origin)) return true;
+  return false;
+}
+
+function resolveCorsOrigin(origin, callback) {
+  if (process.env.NODE_ENV !== 'production') {
+    return callback(null, true);
+  }
+  if (isAllowedCorsOrigin(origin)) {
     return callback(null, true);
   }
   return callback(new Error(`CORS blocked for origin: ${origin}`));

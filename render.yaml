@@ -19,7 +19,7 @@ services:
         value: /app/uploads
       - key: CORS_ORIGIN
         value: https://www.ltcc.ee,https://ltcc.ee,https://maker-set.netlify.app
-      # Set after deploy to https://<service>.onrender.com (then later https://www.ltcc.ee)
+      # Code also allows https://*.netlify.app deploy previews automatically.
       - key: PUBLIC_URL
         sync: false
       - key: JWT_SECRET
