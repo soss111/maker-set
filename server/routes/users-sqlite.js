@@ -21,7 +21,7 @@ router.get('/profile', authenticateToken, async (req, res) => {
       WHERE user_id = ?
     `;
 
-    const result = await db.query(query, [req.user.userId]);
+    const result = await db.query(query, [req.user.user_id ?? req.user.userId]);
     
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });

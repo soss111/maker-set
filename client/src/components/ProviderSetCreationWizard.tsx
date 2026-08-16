@@ -244,7 +244,8 @@ const ProviderSetCreationWizard: React.FC<ProviderSetCreationWizardProps> = ({
         const systemCommissionPercentage = user?.provider_markup_percentage ? 
           100 - user.provider_markup_percentage : 50;
 
-        // Create the set
+        // Create the set (omit hard-coded commission part_id — server seeds SYS-COMM;
+        // missing part ids must not block set creation)
         const setData = {
           name: formData.name,
           description: formData.description,
@@ -265,32 +266,41 @@ const ProviderSetCreationWizard: React.FC<ProviderSetCreationWizardProps> = ({
               description: formData.description
             }
           ],
-          // Add system commission part automatically
-          parts: [
-            {
-              part_id: 60, // System commission part (SYS-COMM)
-              quantity: 1,
-              is_optional: false,
-              notes: `System commission (${systemCommissionPercentage}%)`,
-              safety_notes: 'Platform service fee'
-            }
-          ]
+          parts: []
         };
+
+        // Attach commission part when it exists in the catalog
+        try {
+          const partsResp = await partsApi.getAll();
+          const commissionPart = (partsResp.data?.parts || []).find(
+            (p: any) => p.part_number === 'SYS-COMM' || p.part_id === 60
+          );
+          if (commissionPart?.part_id) {
+            setData.parts = [
+              {
+                part_id: commissionPart.part_id,
+                quantity: 1,
+                is_optional: false,
+                notes: `System commission (${systemCommissionPercentage}%)`,
+                safety_notes: 'Platform service fee'
+              }
+            ];
+          }
+        } catch (partsLookupErr) {
+          console.warn('Commission part lookup skipped:', partsLookupErr);
+        }
 
         // First create the set
         const setResponse = await setsApi.create(setData);
         const createdSetId = setResponse.data.set_id;
         
-        // Then create a provider set entry
-        if (user?.user_id) {
-          await providerApi.createProviderSet({
-            provider_id: user.user_id,
-            set_id: createdSetId,
-            price: formData.base_price,
-            available_quantity: formData.available_quantity,
-            is_active: true
-          });
-        }
+        // Provider set row: server uses JWT user id (do not send a stale local user_id)
+        await providerApi.createProviderSet({
+          set_id: createdSetId,
+          price: formData.base_price,
+          available_quantity: formData.available_quantity,
+          is_active: true
+        });
         
         // Upload photos if any
         if (formData.photos.length > 0) {
@@ -321,7 +331,8 @@ const ProviderSetCreationWizard: React.FC<ProviderSetCreationWizardProps> = ({
 
     } catch (err: any) {
       console.error('Error saving set:', err);
-      setError(err.response?.data?.error || 'Failed to save set');
+      const apiError = err.response?.data?.error || err.response?.data?.details;
+      setError(apiError ? `Failed to create set: ${apiError}` : 'Failed to create set');
     } finally {
       setLoading(false);
     }

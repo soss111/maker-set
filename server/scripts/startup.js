@@ -177,6 +177,56 @@ function ensureProviderSetsColumns() {
   });
 }
 
+/** Ensure the system commission part exists (provider wizard hardcodes part_id 60 / SYS-COMM). */
+function ensureSystemCommissionPart() {
+  return new Promise((resolve) => {
+    const db = connectionManager.getConnection();
+    db.get(
+      "SELECT part_id FROM parts WHERE part_id = 60 OR part_number = 'SYS-COMM' LIMIT 1",
+      [],
+      (err, row) => {
+        if (err) {
+          console.warn('⚠️ Could not check SYS-COMM part:', err.message);
+          resolve();
+          return;
+        }
+        if (row) {
+          resolve();
+          return;
+        }
+        db.run(
+          `INSERT INTO parts (
+            part_id, part_number, name, part_name, category, unit_of_measure,
+            unit_cost, stock_quantity, description
+          ) VALUES (60, 'SYS-COMM', 'System Commission', 'System Commission', 'fee', 'ea', 0, 999999, 'Platform service fee')`,
+          [],
+          (insertErr) => {
+            if (insertErr) {
+              // Fallback without forced id if 60 is taken or schema differs
+              db.run(
+                `INSERT INTO parts (part_number, name, category, unit_cost, stock_quantity, description)
+                 VALUES ('SYS-COMM', 'System Commission', 'fee', 0, 999999, 'Platform service fee')`,
+                [],
+                (fallbackErr) => {
+                  if (fallbackErr) {
+                    console.warn('⚠️ SYS-COMM seed skipped:', fallbackErr.message);
+                  } else {
+                    console.log('✅ Seeded SYS-COMM part');
+                  }
+                  resolve();
+                }
+              );
+            } else {
+              console.log('✅ Seeded SYS-COMM part (id 60)');
+              resolve();
+            }
+          }
+        );
+      }
+    );
+  });
+}
+
 /** Add missing columns to parts table (translations, name, description, updated_at for route compatibility). */
 function ensurePartsColumns() {
   return new Promise((resolve, reject) => {
@@ -531,6 +581,7 @@ async function startup() {
     await ensureFavoritesTable();
     await ensureInventoryTransactionsTable();
     await ensureMediaFilesColumns();
+    await ensureSystemCommissionPart();
   } else {
     console.error('❌ Database connection failed');
     console.log('🔄 Will attempt reconnection in background');

@@ -165,14 +165,11 @@ router.post('/', authenticateToken, async (req, res) => {
 
     const userRole = req.user.role;
     const userId = tokenUserId(req);
+    // Providers always bind to their JWT identity (ignore stale client provider_id)
     const targetProviderId = userRole === 'provider' ? userId : provider_id;
 
     if (!targetProviderId) {
       return res.status(400).json({ error: 'Provider ID is required' });
-    }
-
-    if (userRole === 'provider' && provider_id != null && Number(provider_id) !== Number(userId)) {
-      return res.status(403).json({ error: 'Providers can only create sets for themselves' });
     }
 
     if (!set_id) {
