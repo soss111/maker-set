@@ -248,6 +248,34 @@ const ProviderSetCreationWizard: React.FC<ProviderSetCreationWizardProps> = ({
 
         // Create the set (omit hard-coded commission part_id — server seeds SYS-COMM;
         // missing part ids must not block set creation)
+        type SetPartInput = {
+          part_id: number;
+          quantity: number;
+          is_optional: boolean;
+          notes: string;
+          safety_notes: string;
+        };
+        const setParts: SetPartInput[] = [];
+
+        // Attach commission part when it exists in the catalog
+        try {
+          const partsResp = await partsApi.getAll();
+          const commissionPart = (partsResp.data?.parts || []).find(
+            (p: any) => p.part_number === 'SYS-COMM' || p.part_id === 60
+          );
+          if (commissionPart?.part_id) {
+            setParts.push({
+              part_id: commissionPart.part_id,
+              quantity: 1,
+              is_optional: false,
+              notes: `System commission (${systemCommissionPercentage}%)`,
+              safety_notes: 'Platform service fee'
+            });
+          }
+        } catch (partsLookupErr) {
+          console.warn('Commission part lookup skipped:', partsLookupErr);
+        }
+
         const setData = {
           name: formData.name,
           description: formData.description,
@@ -268,29 +296,8 @@ const ProviderSetCreationWizard: React.FC<ProviderSetCreationWizardProps> = ({
               description: formData.description
             }
           ],
-          parts: []
+          parts: setParts
         };
-
-        // Attach commission part when it exists in the catalog
-        try {
-          const partsResp = await partsApi.getAll();
-          const commissionPart = (partsResp.data?.parts || []).find(
-            (p: any) => p.part_number === 'SYS-COMM' || p.part_id === 60
-          );
-          if (commissionPart?.part_id) {
-            setData.parts = [
-              {
-                part_id: commissionPart.part_id,
-                quantity: 1,
-                is_optional: false,
-                notes: `System commission (${systemCommissionPercentage}%)`,
-                safety_notes: 'Platform service fee'
-              }
-            ];
-          }
-        } catch (partsLookupErr) {
-          console.warn('Commission part lookup skipped:', partsLookupErr);
-        }
 
         // First create the set
         const setResponse = await setsApi.create(setData);
