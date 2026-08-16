@@ -57,6 +57,12 @@ From the repo root, `npm run dev` starts both together via `concurrently`.
 - Client production builds default `REACT_APP_API_URL` to `/api`.
 - Server binds `0.0.0.0`, supports `DB_FILE` / `UPLOADS_DIR`, and comma-separated
   `CORS_ORIGIN` (include `https://www.ltcc.ee`).
+- JWT payloads use `userId`; `authenticateToken` also sets `req.user.user_id`. Prefer
+  `req.user.user_id ?? req.user.userId` in new route code.
+- Provider set create: `POST /api/sets` then `POST /api/provider-sets`. Missing
+  commission `part_id`s are skipped (do not hard-fail the set create).
+- After API fixes, **redeploy Render** so Netlify previews talking to
+  `makerset-api.onrender.com` pick up the change (frontend-only Netlify redeploys are not enough).
 
 ### Client dependency install caveat
 

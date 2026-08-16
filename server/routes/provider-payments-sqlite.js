@@ -8,10 +8,13 @@ const { authenticateToken, requireAdmin } = require('../middleware/auth');
  * List monthly reports (admin sees all; provider sees own). Returns array of MonthlyReport.
  * For now returns [] unless we add a monthly_reports table later.
  */
+function tokenUserId(req) {
+  return req.user?.user_id ?? req.user?.userId ?? req.user?.id;
+}
+
 router.get('/monthly-reports', authenticateToken, async (req, res) => {
   try {
     const userRole = req.user?.role;
-    const userId = req.user?.user_id;
     if (userRole !== 'admin' && userRole !== 'provider') {
       return res.status(403).json({ error: 'Admin or Provider access required' });
     }
@@ -28,10 +31,10 @@ router.get('/reports', authenticateToken, async (req, res) => {
   try {
     const { provider_id, year, month } = req.query;
     const userRole = req.user.role;
-    const userId = req.user.user_id;
+    const userId = tokenUserId(req);
 
     // Only providers can access their own reports, or admins can access any
-    if (userRole === 'provider' && provider_id && provider_id != userId) {
+    if (userRole === 'provider' && provider_id && Number(provider_id) !== Number(userId)) {
       return res.status(403).json({ error: 'Providers can only access their own reports' });
     }
 
@@ -132,10 +135,10 @@ router.get('/payments', authenticateToken, async (req, res) => {
   try {
     const { provider_id, year, month } = req.query;
     const userRole = req.user.role;
-    const userId = req.user.user_id;
+    const userId = tokenUserId(req);
 
     // Only providers can access their own payments, or admins can access any
-    if (userRole === 'provider' && provider_id && provider_id != userId) {
+    if (userRole === 'provider' && provider_id && Number(provider_id) !== Number(userId)) {
       return res.status(403).json({ error: 'Providers can only access their own payments' });
     }
 
@@ -144,15 +147,15 @@ router.get('/payments', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'Provider ID is required' });
     }
 
-    // Get payment history
+    // Get payment history (use columns that exist on the SQLite orders schema)
     const paymentsQuery = `
       SELECT 
         o.order_id,
         o.order_number,
         o.created_at,
+        o.order_date,
         o.total_amount,
         o.status,
-        o.payment_completed_at,
         oi.set_id,
         oi.quantity,
         oi.line_total,
@@ -162,8 +165,8 @@ router.get('/payments', authenticateToken, async (req, res) => {
       JOIN sets s ON oi.set_id = s.set_id
       LEFT JOIN provider_sets ps ON oi.set_id = ps.set_id AND ps.provider_id = ?
       WHERE ps.provider_id = ?
-        AND o.status = 'payment_completed'
-      ORDER BY o.payment_completed_at DESC
+        AND o.status IN ('payment_completed', 'completed', 'paid', 'delivered', 'shipped')
+      ORDER BY COALESCE(o.order_date, o.created_at) DESC
     `;
 
     const paymentsResult = await db.query(paymentsQuery, [targetProviderId, targetProviderId]);
@@ -178,7 +181,7 @@ router.get('/payments', authenticateToken, async (req, res) => {
       summary: {
         total_payments: totalPayments,
         total_amount_paid: totalPaid,
-        last_payment_date: paymentsResult.rows[0]?.payment_completed_at || null
+        last_payment_date: paymentsResult.rows[0]?.order_date || paymentsResult.rows[0]?.created_at || null
       }
     });
 

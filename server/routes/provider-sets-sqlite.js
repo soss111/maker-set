@@ -1,27 +1,31 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../models/database');
-const { authenticateToken, requireAdmin } = require('../middleware/auth');
+const { authenticateToken } = require('../middleware/auth');
+
+function tokenUserId(req) {
+  return req.user?.user_id ?? req.user?.userId ?? req.user?.id;
+}
 
 // Get all provider sets (public for customers, filtered for providers)
-router.get('/', authenticateToken, async(req, res) => {
+router.get('/', authenticateToken, async (req, res) => {
   try {
-    const { provider_id, set_id, is_active, page = 1, limit = 50 } = req.query;
+    const { provider_id, set_id, is_active, include_inactive, page = 1, limit = 50 } = req.query;
     const userRole = req.user.role;
-    const userId = req.user.user_id;
+    const userId = tokenUserId(req);
 
     let query = `
-      SELECT ps.*, 
+      SELECT ps.*,
+             s.name as set_name,
+             s.description as set_description,
              s.category, s.difficulty_level, s.recommended_age_min, s.recommended_age_max,
-             s.estimated_duration_minutes, s.active as set_active,
-             st.name as set_name, st.description as set_description,
-             u.username as provider_username, u.company_name as provider_company
+             s.estimated_duration_minutes, s.active as set_active, s.base_price,
+             u.username as provider_username, u.company_name as provider_company,
+             u.first_name as provider_first_name, u.last_name as provider_last_name
       FROM provider_sets ps
       JOIN sets s ON ps.set_id = s.set_id
-      JOIN set_translations st ON s.set_id = st.set_id
-      JOIN languages l ON st.language_id = l.language_id
       JOIN users u ON ps.provider_id = u.user_id
-      WHERE l.language_code = 'en' AND s.active = 1
+      WHERE 1=1
     `;
 
     const params = [];
@@ -43,15 +47,18 @@ router.get('/', authenticateToken, async(req, res) => {
       params.push(set_id);
     }
 
+    const wantInactive = include_inactive === 'true' || include_inactive === true;
     if (is_active !== undefined) {
       query += ' AND ps.is_active = ?';
-      params.push(is_active === 'true' ? 1 : 0);
+      params.push(is_active === 'true' || is_active === true ? 1 : 0);
+    } else if (!wantInactive && userRole !== 'provider') {
+      query += ' AND ps.is_active = 1';
     }
 
     // Add pagination
     const offset = (page - 1) * limit;
     query += ' ORDER BY ps.created_at DESC LIMIT ? OFFSET ?';
-    params.push(parseInt(limit), offset);
+    params.push(parseInt(limit, 10), offset);
 
     const result = await db.query(query, params);
 
@@ -60,9 +67,7 @@ router.get('/', authenticateToken, async(req, res) => {
       SELECT COUNT(*) as total
       FROM provider_sets ps
       JOIN sets s ON ps.set_id = s.set_id
-      JOIN set_translations st ON s.set_id = st.set_id
-      JOIN languages l ON st.language_id = l.language_id
-      WHERE l.language_code = 'en' AND s.active = 1
+      WHERE 1=1
     `;
 
     const countParams = [];
@@ -83,22 +88,23 @@ router.get('/', authenticateToken, async(req, res) => {
 
     if (is_active !== undefined) {
       countQuery += ' AND ps.is_active = ?';
-      countParams.push(is_active === 'true' ? 1 : 0);
+      countParams.push(is_active === 'true' || is_active === true ? 1 : 0);
+    } else if (!wantInactive && userRole !== 'provider') {
+      countQuery += ' AND ps.is_active = 1';
     }
 
     const countResult = await db.query(countQuery, countParams);
-    const total = parseInt(countResult.rows[0].total);
+    const total = parseInt(countResult.rows[0].total, 10);
 
     res.json({
       provider_sets: result.rows,
       pagination: {
-        page: parseInt(page),
-        limit: parseInt(limit),
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
         total,
-        pages: Math.ceil(total / limit)
+        pages: Math.ceil(total / limit) || 0
       }
     });
-
   } catch (error) {
     console.error('Error fetching provider sets:', error);
     res.status(500).json({ error: 'Failed to fetch provider sets' });
@@ -110,38 +116,35 @@ router.get('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const userRole = req.user.role;
-    const userId = req.user.user_id;
+    const userId = tokenUserId(req);
 
     let query = `
-      SELECT ps.*, 
+      SELECT ps.*,
+             s.name as set_name,
+             s.description as set_description,
              s.category, s.difficulty_level, s.recommended_age_min, s.recommended_age_max,
-             s.estimated_duration_minutes, s.active as set_active,
-             st.name as set_name, st.description as set_description,
+             s.estimated_duration_minutes, s.active as set_active, s.base_price,
              u.username as provider_username, u.company_name as provider_company
       FROM provider_sets ps
       JOIN sets s ON ps.set_id = s.set_id
-      JOIN set_translations st ON s.set_id = st.set_id
-      JOIN languages l ON st.language_id = l.language_id
       JOIN users u ON ps.provider_id = u.user_id
-      WHERE ps.provider_set_id = ? AND l.language_code = 'en'
+      WHERE ps.provider_set_id = ?
     `;
 
     const params = [id];
 
-    // Role-based access control
     if (userRole === 'provider') {
       query += ' AND ps.provider_id = ?';
       params.push(userId);
     }
 
     const result = await db.query(query, params);
-    
+
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Provider set not found' });
     }
 
     res.json({ provider_set: result.rows[0] });
-
   } catch (error) {
     console.error('Error fetching provider set:', error);
     res.status(500).json({ error: 'Failed to fetch provider set' });
@@ -155,39 +158,49 @@ router.post('/', authenticateToken, async (req, res) => {
       set_id,
       provider_id,
       price,
-      currency = 'EUR',
+      available_quantity = 0,
       is_active = true,
       notes
     } = req.body;
 
     const userRole = req.user.role;
-    const userId = req.user.user_id;
+    const userId = tokenUserId(req);
+    const targetProviderId = userRole === 'provider' ? userId : provider_id;
 
-    // Only providers can create provider sets for themselves, or admins can create for anyone
-    if (userRole === 'provider' && provider_id != userId) {
+    if (!targetProviderId) {
+      return res.status(400).json({ error: 'Provider ID is required' });
+    }
+
+    if (userRole === 'provider' && provider_id != null && Number(provider_id) !== Number(userId)) {
       return res.status(403).json({ error: 'Providers can only create sets for themselves' });
     }
 
-    const query = `
-      INSERT INTO provider_sets (
-        set_id, provider_id, price, currency, is_active, notes
-      ) VALUES (?, ?, ?, ?, ?, ?)
-    `;
+    if (!set_id) {
+      return res.status(400).json({ error: 'set_id is required' });
+    }
 
-    const result = await db.query(query, [
-      set_id, provider_id, price, currency, is_active ? 1 : 0, notes
-    ]);
-
-    const providerSetId = result.rows[0].id || result.lastID;
+    const result = await db.run(
+      `INSERT INTO provider_sets (
+        set_id, provider_id, price, available_quantity, is_active, admin_notes,
+        provider_visible, admin_visible, admin_status
+      ) VALUES (?, ?, ?, ?, ?, ?, 1, 1, 'pending')`,
+      [
+        set_id,
+        targetProviderId,
+        price ?? 0,
+        available_quantity ?? 0,
+        is_active ? 1 : 0,
+        notes || null
+      ]
+    );
 
     res.status(201).json({
       message: 'Provider set created successfully',
-      provider_set_id: providerSetId
+      provider_set_id: result.lastID
     });
-
   } catch (error) {
     console.error('Error creating provider set:', error);
-    res.status(500).json({ error: 'Failed to create provider set' });
+    res.status(500).json({ error: 'Failed to create provider set', details: error.message });
   }
 });
 
@@ -197,42 +210,83 @@ router.put('/:id', authenticateToken, async (req, res) => {
     const { id } = req.params;
     const {
       price,
-      currency,
+      available_quantity,
       is_active,
       notes
     } = req.body;
 
     const userRole = req.user.role;
-    const userId = req.user.user_id;
+    const userId = tokenUserId(req);
 
-    // Check if user can update this provider set
-    const checkQuery = 'SELECT provider_id FROM provider_sets WHERE provider_set_id = ?';
-    const checkResult = await db.query(checkQuery, [id]);
-    
+    const checkResult = await db.query(
+      'SELECT provider_id FROM provider_sets WHERE provider_set_id = ?',
+      [id]
+    );
+
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'Provider set not found' });
     }
 
     const providerId = checkResult.rows[0].provider_id;
 
-    // Only the provider who owns the set or an admin can update it
-    if (userRole === 'provider' && providerId != userId) {
+    if (userRole === 'provider' && Number(providerId) !== Number(userId)) {
       return res.status(403).json({ error: 'You can only update your own provider sets' });
     }
 
-    const query = `
-      UPDATE provider_sets 
-      SET price = ?, currency = ?, is_active = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE provider_set_id = ?
-    `;
-
-    await db.query(query, [price, currency, is_active ? 1 : 0, notes, id]);
+    await db.run(
+      `UPDATE provider_sets
+       SET price = COALESCE(?, price),
+           available_quantity = COALESCE(?, available_quantity),
+           is_active = COALESCE(?, is_active),
+           admin_notes = COALESCE(?, admin_notes),
+           updated_at = CURRENT_TIMESTAMP
+       WHERE provider_set_id = ?`,
+      [
+        price !== undefined ? price : null,
+        available_quantity !== undefined ? available_quantity : null,
+        is_active !== undefined ? (is_active ? 1 : 0) : null,
+        notes !== undefined ? notes : null,
+        id
+      ]
+    );
 
     res.json({ message: 'Provider set updated successfully' });
-
   } catch (error) {
     console.error('Error updating provider set:', error);
     res.status(500).json({ error: 'Failed to update provider set' });
+  }
+});
+
+// Update provider visibility
+router.put('/:id/visibility', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { provider_visible } = req.body;
+    const userRole = req.user.role;
+    const userId = tokenUserId(req);
+
+    const checkResult = await db.query(
+      'SELECT provider_id FROM provider_sets WHERE provider_set_id = ?',
+      [id]
+    );
+
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Provider set not found' });
+    }
+
+    if (userRole === 'provider' && Number(checkResult.rows[0].provider_id) !== Number(userId)) {
+      return res.status(403).json({ error: 'You can only update your own provider sets' });
+    }
+
+    await db.run(
+      `UPDATE provider_sets SET provider_visible = ?, updated_at = CURRENT_TIMESTAMP WHERE provider_set_id = ?`,
+      [provider_visible ? 1 : 0, id]
+    );
+
+    res.json({ message: 'Visibility updated successfully' });
+  } catch (error) {
+    console.error('Error updating provider set visibility:', error);
+    res.status(500).json({ error: 'Failed to update visibility' });
   }
 });
 
@@ -241,76 +295,26 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const userRole = req.user.role;
-    const userId = req.user.user_id;
+    const userId = tokenUserId(req);
 
-    // Check if user can delete this provider set
-    const checkQuery = 'SELECT provider_id FROM provider_sets WHERE provider_set_id = ?';
-    const checkResult = await db.query(checkQuery, [id]);
-    
+    const checkResult = await db.query(
+      'SELECT provider_id FROM provider_sets WHERE provider_set_id = ?',
+      [id]
+    );
+
     if (checkResult.rows.length === 0) {
       return res.status(404).json({ error: 'Provider set not found' });
     }
 
-    const providerId = checkResult.rows[0].provider_id;
-
-    // Only the provider who owns the set or an admin can delete it
-    if (userRole === 'provider' && providerId != userId) {
+    if (userRole === 'provider' && Number(checkResult.rows[0].provider_id) !== Number(userId)) {
       return res.status(403).json({ error: 'You can only delete your own provider sets' });
     }
 
-    await db.query('DELETE FROM provider_sets WHERE provider_set_id = ?', [id]);
-
+    await db.run('DELETE FROM provider_sets WHERE provider_set_id = ?', [id]);
     res.json({ message: 'Provider set deleted successfully' });
-
   } catch (error) {
     console.error('Error deleting provider set:', error);
     res.status(500).json({ error: 'Failed to delete provider set' });
-  }
-});
-
-// Update provider set visibility
-router.put('/:id/visibility', authenticateToken, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { provider_visible } = req.body;
-    
-    const userRole = req.user.role;
-    const userId = req.user.user_id;
-
-    // Check if user can update this provider set
-    const checkQuery = 'SELECT provider_id FROM provider_sets WHERE provider_set_id = ?';
-    const checkResult = await db.query(checkQuery, [id]);
-    
-    if (checkResult.rows.length === 0) {
-      return res.status(404).json({ error: 'Provider set not found' });
-    }
-
-    const providerId = checkResult.rows[0].provider_id;
-
-    // Only the provider who owns the set or an admin can update it
-    if (userRole === 'provider' && providerId != userId) {
-      return res.status(403).json({ error: 'You can only update your own provider sets' });
-    }
-
-    const query = `
-      UPDATE provider_sets 
-      SET provider_visible = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE provider_set_id = ?
-    `;
-    
-    await db.run(query, [provider_visible ? 1 : 0, id]);
-    
-    console.log(`✅ Updated provider visibility for provider set ${id}: ${provider_visible}`);
-    
-    res.json({ 
-      success: true, 
-      message: `Provider set ${provider_visible ? 'enabled' : 'disabled'} by provider`,
-      provider_visible: !!provider_visible
-    });
-    
-  } catch (error) {
-    console.error('❌ Error updating provider visibility:', error);
-    res.status(500).json({ error: 'Failed to update provider visibility' });
   }
 });
 

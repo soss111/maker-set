@@ -14,6 +14,7 @@ function issueAuthToken(user) {
   return jwt.sign(
     {
       userId: user.user_id,
+      user_id: user.user_id,
       email: user.email,
       username: user.username,
       role: user.role,
@@ -100,7 +101,8 @@ router.post('/register', async (req, res) => {
     // Generate JWT token
     const token = jwt.sign(
       { 
-        userId: userId, 
+        userId: userId,
+        user_id: userId,
         email, 
         username, 
         role,

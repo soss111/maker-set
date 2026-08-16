@@ -14,7 +14,13 @@ const authenticateToken = (req, res, next) => {
     if (err) {
       return res.status(403).json({ error: 'Invalid or expired token' });
     }
-    req.user = user;
+    // Normalize JWT claims: tokens use userId; many routes expect user_id
+    const userId = user.userId ?? user.user_id ?? user.id;
+    req.user = {
+      ...user,
+      userId,
+      user_id: userId,
+    };
     next();
   });
 };
@@ -30,7 +36,8 @@ const requireAdmin = (req, res, next) => {
 // Middleware to check if user is admin or the user themselves
 const requireAdminOrSelf = (req, res, next) => {
   const userId = parseInt(req.params.userId || req.params.id);
-  if (!req.user || (req.user.role !== 'admin' && req.user.user_id !== userId)) {
+  const tokenUserId = req.user.user_id ?? req.user.userId;
+  if (!req.user || (req.user.role !== 'admin' && tokenUserId !== userId)) {
     return res.status(403).json({ error: 'Access denied' });
   }
   next();

@@ -293,6 +293,88 @@ router.get('/sales-management', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/orders/provider/:provider_id
+ * Orders for a provider to fulfill (must be registered before /:id).
+ */
+router.get('/provider/:provider_id', async (req, res) => {
+  try {
+    const providerId = req.params.provider_id;
+    const { status } = req.query;
+
+    let whereClause = 'WHERE o.provider_id = ?';
+    const params = [providerId];
+
+    if (status && status !== 'all') {
+      whereClause += ' AND o.status = ?';
+      params.push(status);
+    }
+
+    const ordersQuery = `
+      SELECT
+        o.*,
+        c.first_name as customer_first_name,
+        c.last_name as customer_last_name,
+        COALESCE(o.customer_email, c.email) as customer_email,
+        c.phone as customer_phone,
+        c.company_name as customer_company_name,
+        p.first_name as provider_first_name,
+        p.last_name as provider_last_name,
+        p.email as provider_email,
+        p.company_name as provider_company_name
+      FROM orders o
+      LEFT JOIN users c ON o.customer_id = c.user_id
+      LEFT JOIN users p ON o.provider_id = p.user_id
+      ${whereClause}
+      ORDER BY COALESCE(o.created_at, o.order_date) DESC
+    `;
+
+    const ordersResult = await db.query(ordersQuery, params);
+    const orders = ordersResult.rows || [];
+
+    if (orders.length === 0) {
+      return res.json({
+        orders: [],
+        provider_id: providerId,
+        status: status || 'all',
+      });
+    }
+
+    const orderIds = orders.map((o) => o.order_id);
+    const placeholders = orderIds.map(() => '?').join(',');
+    const itemsQuery = `
+      SELECT
+        oi.*,
+        s.name as set_name,
+        s.description as set_description
+      FROM order_items oi
+      LEFT JOIN sets s ON oi.set_id = s.set_id
+      WHERE oi.order_id IN (${placeholders})
+      ORDER BY oi.order_id, oi.order_item_id
+    `;
+    const itemsResult = await db.query(itemsQuery, orderIds);
+    const itemsByOrder = {};
+    for (const item of itemsResult.rows || []) {
+      if (!itemsByOrder[item.order_id]) itemsByOrder[item.order_id] = [];
+      itemsByOrder[item.order_id].push(item);
+    }
+
+    const transformed = orders.map((order) => ({
+      ...order,
+      items: itemsByOrder[order.order_id] || [],
+    }));
+
+    res.json({
+      orders: transformed,
+      provider_id: providerId,
+      status: status || 'all',
+    });
+  } catch (error) {
+    console.error('Error fetching provider orders:', error);
+    res.status(500).json({ error: 'Failed to fetch provider orders' });
+  }
+});
+
 // Get order by ID
 router.get('/:id', async (req, res) => {
   try {

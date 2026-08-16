@@ -349,6 +349,8 @@ router.post('/', async (req, res) => {
       category,
       difficulty_level,
       estimated_duration_minutes,
+      recommended_age_min,
+      recommended_age_max,
       base_price,
       video_url,
       learning_outcomes,
@@ -356,42 +358,66 @@ router.post('/', async (req, res) => {
       tools = []
     } = req.body;
 
+    if (!name || !String(name).trim()) {
+      return res.status(400).json({ error: 'Set name is required' });
+    }
+
     // Insert set
     const setQuery = `
       INSERT INTO sets (
         name, description, category, difficulty_level, estimated_duration_minutes,
+        recommended_age_min, recommended_age_max,
         base_price, video_url, learning_outcomes
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `;
 
     const setResult = await db.run(setQuery, [
       name, description, category, difficulty_level, estimated_duration_minutes,
-      base_price, video_url, learning_outcomes
+      recommended_age_min ?? null, recommended_age_max ?? null,
+      base_price ?? 0, video_url || null, learning_outcomes || null
     ]);
 
     const setId = setResult.lastID;
 
-    // Insert set parts
+    // Insert set parts (skip missing part_ids so hardcoded commission parts don't 500)
     if (parts.length > 0) {
       for (const part of parts) {
-        const partQuery = `
-          INSERT INTO set_parts (set_id, part_id, quantity, is_optional)
-          VALUES (?, ?, ?, ?)
-        `;
-        
-        await db.run(partQuery, [setId, part.part_id, part.quantity, part.is_required ? 0 : 1]);
+        if (!part?.part_id) continue;
+        const exists = await db.query('SELECT part_id FROM parts WHERE part_id = ?', [part.part_id]);
+        if (!exists.rows?.length) {
+          console.warn(`Skipping set_parts: part_id ${part.part_id} not found`);
+          continue;
+        }
+        const isOptional =
+          part.is_optional !== undefined
+            ? (part.is_optional ? 1 : 0)
+            : (part.is_required ? 0 : 1);
+        await db.run(
+          `INSERT INTO set_parts (set_id, part_id, quantity, is_optional, notes)
+           VALUES (?, ?, ?, ?, ?)`,
+          [setId, part.part_id, part.quantity ?? 1, isOptional, part.notes || null]
+        );
       }
     }
 
-    // Insert set tools
+    // Insert set tools (skip missing tool_ids)
     if (tools.length > 0) {
       for (const tool of tools) {
-        const toolQuery = `
-          INSERT INTO set_tools (set_id, tool_id, quantity, is_optional)
-          VALUES (?, ?, ?, ?)
-        `;
-        
-        await db.run(toolQuery, [setId, tool.tool_id, tool.quantity, tool.is_required ? 0 : 1]);
+        if (!tool?.tool_id) continue;
+        const exists = await db.query('SELECT tool_id FROM tools WHERE tool_id = ?', [tool.tool_id]);
+        if (!exists.rows?.length) {
+          console.warn(`Skipping set_tools: tool_id ${tool.tool_id} not found`);
+          continue;
+        }
+        const isOptional =
+          tool.is_optional !== undefined
+            ? (tool.is_optional ? 1 : 0)
+            : (tool.is_required ? 0 : 1);
+        await db.run(
+          `INSERT INTO set_tools (set_id, tool_id, quantity, is_optional)
+           VALUES (?, ?, ?, ?)`,
+          [setId, tool.tool_id, tool.quantity ?? 1, isOptional]
+        );
       }
     }
 
@@ -402,7 +428,7 @@ router.post('/', async (req, res) => {
 
   } catch (error) {
     console.error('Error creating set:', error);
-    res.status(500).json({ error: 'Failed to create set' });
+    res.status(500).json({ error: 'Failed to create set', details: error.message });
   }
 });
 
